@@ -23,9 +23,9 @@
   </parent>
 
   <groupId>io.netty.contrib</groupId>
-  <artifactId>netty-template-parent</artifactId>
+  <artifactId>netty-codec-haproxy-parent</artifactId>
   <version>5.0.0.Final-SNAPSHOT</version>
-  <name>Netty/Codec/Template Parent</name>
+  <name>Netty/Codec/HAProxy Parent</name>
   <packaging>pom</packaging>
   <url>https://netty.io/</url>
   <description>
@@ -48,9 +48,9 @@
   <inceptionYear>2021</inceptionYear>
 
   <scm>
-    <url>https://github.com/netty-contrib/template</url>
-    <connection>scm:git:https://github.com/netty-contrib/template.git</connection>
-    <developerConnection>scm:git:https://github.com/netty-contrib/template.git</developerConnection>
+    <url>https://github.com/netty-contrib/codec-haproxy</url>
+    <connection>scm:git:https://github.com/netty-contrib/codec-haproxy.git</connection>
+    <developerConnection>scm:git:https://github.com/netty-contrib/codec-haproxy.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
@@ -75,9 +75,8 @@
   </properties>
 
   <modules>
-    <module>template</module>
+    <module>codec-haproxy</module>
     <module>examples</module>
-    <module>benchmarks</module>
   </modules>
 
   <build>
