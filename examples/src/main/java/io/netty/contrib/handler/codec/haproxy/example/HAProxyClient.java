@@ -15,18 +15,18 @@
  */
 package io.netty.contrib.handler.codec.haproxy.example;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.MultithreadEventLoopGroup;
-import io.netty.channel.nio.NioHandler;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty5.bootstrap.Bootstrap;
+import io.netty5.buffer.Unpooled;
+import io.netty5.channel.Channel;
+import io.netty5.channel.EventLoopGroup;
+import io.netty5.channel.MultithreadEventLoopGroup;
+import io.netty5.channel.nio.NioHandler;
+import io.netty5.channel.socket.nio.NioSocketChannel;
 import io.netty.contrib.handler.codec.haproxy.HAProxyCommand;
 import io.netty.contrib.handler.codec.haproxy.HAProxyMessage;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProtocolVersion;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol;
-import io.netty.util.CharsetUtil;
+import io.netty5.util.CharsetUtil;
 
 import static io.netty.contrib.handler.codec.haproxy.example.HAProxyServer.PORT;
 

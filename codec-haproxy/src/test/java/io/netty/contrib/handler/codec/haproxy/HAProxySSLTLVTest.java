@@ -15,7 +15,7 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.Unpooled;
+import io.netty5.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

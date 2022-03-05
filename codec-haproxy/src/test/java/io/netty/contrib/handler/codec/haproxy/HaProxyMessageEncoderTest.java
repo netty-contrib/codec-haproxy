@@ -15,13 +15,13 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty5.buffer.ByteBuf;
+import io.netty5.buffer.ByteBufUtil;
+import io.netty5.buffer.Unpooled;
+import io.netty5.channel.embedded.EmbeddedChannel;
 import io.netty.contrib.handler.codec.haproxy.HAProxyTLV.Type;
-import io.netty.util.ByteProcessor;
-import io.netty.util.CharsetUtil;
+import io.netty5.util.ByteProcessor;
+import io.netty5.util.CharsetUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

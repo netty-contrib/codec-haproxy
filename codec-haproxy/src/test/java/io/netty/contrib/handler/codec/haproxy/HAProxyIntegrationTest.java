@@ -15,18 +15,18 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.MultithreadEventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.local.LocalAddress;
-import io.netty.channel.local.LocalChannel;
-import io.netty.channel.local.LocalHandler;
-import io.netty.channel.local.LocalServerChannel;
+import io.netty5.bootstrap.Bootstrap;
+import io.netty5.bootstrap.ServerBootstrap;
+import io.netty5.channel.Channel;
+import io.netty5.channel.ChannelHandlerContext;
+import io.netty5.channel.ChannelInitializer;
+import io.netty5.channel.EventLoopGroup;
+import io.netty5.channel.MultithreadEventLoopGroup;
+import io.netty5.channel.SimpleChannelInboundHandler;
+import io.netty5.channel.local.LocalAddress;
+import io.netty5.channel.local.LocalChannel;
+import io.netty5.channel.local.LocalHandler;
+import io.netty5.channel.local.LocalServerChannel;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;

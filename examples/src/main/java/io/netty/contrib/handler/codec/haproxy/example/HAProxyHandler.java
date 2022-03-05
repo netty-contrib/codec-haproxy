@@ -15,11 +15,11 @@
  */
 package io.netty.contrib.handler.codec.haproxy.example;
 
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty5.channel.ChannelHandler;
+import io.netty5.channel.ChannelHandlerContext;
 import io.netty.contrib.handler.codec.haproxy.HAProxyMessage;
 import io.netty.contrib.handler.codec.haproxy.HAProxyMessageEncoder;
-import io.netty.util.concurrent.Future;
+import io.netty5.util.concurrent.Future;
 
 public class HAProxyHandler implements ChannelHandler {
 

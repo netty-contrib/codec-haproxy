@@ -15,11 +15,11 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.handler.codec.ProtocolDetectionResult;
-import io.netty.util.CharsetUtil;
+import io.netty5.buffer.ByteBuf;
+import io.netty5.channel.ChannelHandlerContext;
+import io.netty5.handler.codec.ByteToMessageDecoder;
+import io.netty5.handler.codec.ProtocolDetectionResult;
+import io.netty5.util.CharsetUtil;
 
 
 import static io.netty.contrib.handler.codec.haproxy.HAProxyConstants.*;
