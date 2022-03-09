@@ -17,16 +17,16 @@ package io.netty.contrib.handler.codec.haproxy;
 
 import static java.util.Objects.requireNonNull;
 
-import io.netty.buffer.ByteBuf;
+import io.netty5.buffer.ByteBuf;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol.AddressFamily;
-import io.netty.util.AbstractReferenceCounted;
-import io.netty.util.ByteProcessor;
-import io.netty.util.CharsetUtil;
-import io.netty.util.NetUtil;
-import io.netty.util.ResourceLeakDetector;
-import io.netty.util.ResourceLeakDetectorFactory;
-import io.netty.util.ResourceLeakTracker;
-import io.netty.util.internal.StringUtil;
+import io.netty5.util.AbstractReferenceCounted;
+import io.netty5.util.ByteProcessor;
+import io.netty5.util.CharsetUtil;
+import io.netty5.util.NetUtil;
+import io.netty5.util.ResourceLeakDetector;
+import io.netty5.util.ResourceLeakDetectorFactory;
+import io.netty5.util.ResourceLeakTracker;
+import io.netty5.util.internal.StringUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;

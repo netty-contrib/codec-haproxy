@@ -15,7 +15,7 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.handler.codec.DecoderException;
+import io.netty5.handler.codec.DecoderException;
 
 /**
  * A {@link DecoderException} which is thrown when an invalid HAProxy proxy protocol header is encountered
