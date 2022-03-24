@@ -15,8 +15,8 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty5.buffer.ByteBuf;
-import io.netty5.buffer.DefaultByteBufHolder;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.DefaultByteBufHolder;
 import io.netty5.util.internal.StringUtil;
 
 import static java.util.Objects.requireNonNull;

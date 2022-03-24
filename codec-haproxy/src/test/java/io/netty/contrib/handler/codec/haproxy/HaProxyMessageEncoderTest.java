@@ -15,9 +15,9 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty5.buffer.ByteBuf;
-import io.netty5.buffer.ByteBufUtil;
-import io.netty5.buffer.Unpooled;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import io.netty5.channel.embedded.EmbeddedChannel;
 import io.netty.contrib.handler.codec.haproxy.HAProxyTLV.Type;
 import io.netty5.util.ByteProcessor;
