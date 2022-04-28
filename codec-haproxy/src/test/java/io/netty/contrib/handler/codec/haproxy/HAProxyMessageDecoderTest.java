@@ -15,7 +15,7 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.ByteBuf;
+import io.netty5.buffer.api.Buffer;
 import io.netty5.channel.embedded.EmbeddedChannel;
 import io.netty5.handler.codec.ProtocolDetectionResult;
 import io.netty5.handler.codec.ProtocolDetectionState;
@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static io.netty.buffer.Unpooled.buffer;
-import static io.netty.buffer.Unpooled.copiedBuffer;
+import static io.netty5.buffer.ByteBufUtil.writeAscii;
+import static io.netty5.buffer.api.DefaultBufferAllocators.preferredAllocator;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -50,126 +50,126 @@ public class HAProxyMessageDecoderTest {
     public void testIPV4Decode() {
         int startChannels = ch.pipeline().names().size();
         String header = "PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n";
-        ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII));
+        ch.writeInbound(writeAscii(ch.bufferAllocator(), header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V1, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.TCP4, msg.proxiedProtocol());
-        assertEquals("192.168.0.1", msg.sourceAddress());
-        assertEquals("192.168.0.11", msg.destinationAddress());
-        assertEquals(56324, msg.sourcePort());
-        assertEquals(443, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V1, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.TCP4, msg.proxiedProtocol());
+            assertEquals("192.168.0.1", msg.sourceAddress());
+            assertEquals("192.168.0.11", msg.destinationAddress());
+            assertEquals(56324, msg.sourcePort());
+            assertEquals(443, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
     public void testIPV6Decode() {
         int startChannels = ch.pipeline().names().size();
         String header = "PROXY TCP6 2001:0db8:85a3:0000:0000:8a2e:0370:7334 1050:0:0:0:5:600:300c:326b 56324 443\r\n";
-        ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII));
+        ch.writeInbound(writeAscii(ch.bufferAllocator(), header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V1, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.TCP6, msg.proxiedProtocol());
-        assertEquals("2001:0db8:85a3:0000:0000:8a2e:0370:7334", msg.sourceAddress());
-        assertEquals("1050:0:0:0:5:600:300c:326b", msg.destinationAddress());
-        assertEquals(56324, msg.sourcePort());
-        assertEquals(443, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V1, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.TCP6, msg.proxiedProtocol());
+            assertEquals("2001:0db8:85a3:0000:0000:8a2e:0370:7334", msg.sourceAddress());
+            assertEquals("1050:0:0:0:5:600:300c:326b", msg.destinationAddress());
+            assertEquals(56324, msg.sourcePort());
+            assertEquals(443, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
     public void testUnknownProtocolDecode() {
         int startChannels = ch.pipeline().names().size();
         String header = "PROXY UNKNOWN 192.168.0.1 192.168.0.11 56324 443\r\n";
-        ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII));
+        ch.writeInbound(writeAscii(ch.bufferAllocator(), header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V1, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.UNKNOWN, msg.proxiedProtocol());
-        assertNull(msg.sourceAddress());
-        assertNull(msg.destinationAddress());
-        assertEquals(0, msg.sourcePort());
-        assertEquals(0, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V1, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.UNKNOWN, msg.proxiedProtocol());
+            assertNull(msg.sourceAddress());
+            assertNull(msg.destinationAddress());
+            assertEquals(0, msg.sourcePort());
+            assertEquals(0, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
     public void testV1NoUDP() {
         String header = "PROXY UDP4 192.168.0.1 192.168.0.11 56324 443\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testInvalidPort() {
         String header = "PROXY TCP4 192.168.0.1 192.168.0.11 80000 443\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testInvalidIPV4Address() {
         String header = "PROXY TCP4 299.168.0.1 192.168.0.11 56324 443\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testInvalidIPV6Address() {
         String header = "PROXY TCP6 r001:0db8:85a3:0000:0000:8a2e:0370:7334 1050:0:0:0:5:600:300c:326b 56324 443\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testInvalidProtocol() {
         String header = "PROXY TCP7 192.168.0.1 192.168.0.11 56324 443\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testMissingParams() {
         String header = "PROXY TCP4 192.168.0.1 192.168.0.11 56324\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testTooManyParams() {
         String header = "PROXY TCP4 192.168.0.1 192.168.0.11 56324 443 123\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testInvalidCommand() {
         String header = "PING TCP4 192.168.0.1 192.168.0.11 56324 443\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
     public void testInvalidEOL() {
         String header = "PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\nGET / HTTP/1.1\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
@@ -177,7 +177,7 @@ public class HAProxyMessageDecoderTest {
         String header = "PROXY TCP4 192.168.0.1 192.168.0.11 56324 " +
                         "00000000000000000000000000000000000000000000000000000000000000000443\r\n";
         assertThrows(HAProxyProtocolException.class,
-            () -> ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII)));
+            () -> ch.writeInbound(writeAscii(ch.bufferAllocator(), header)));
     }
 
     @Test
@@ -187,15 +187,15 @@ public class HAProxyMessageDecoderTest {
             String headerPart1 = "PROXY TCP4 192.168.0.1 192.168.0.11 56324 " +
                                  "000000000000000000000000000000000000000000000000000000000000000000000443";
             // Should not throw exception
-            assertFalse(slowFailCh.writeInbound(copiedBuffer(headerPart1, CharsetUtil.US_ASCII)));
+            assertFalse(slowFailCh.writeInbound(writeAscii(ch.bufferAllocator(), headerPart1)));
             String headerPart2 = "more header data";
             // Should not throw exception
-            assertFalse(slowFailCh.writeInbound(copiedBuffer(headerPart2, CharsetUtil.US_ASCII)));
+            assertFalse(slowFailCh.writeInbound(writeAscii(ch.bufferAllocator(), headerPart2)));
             String headerPart3 = "end of header\r\n";
 
             int discarded = headerPart1.length() + headerPart2.length() + headerPart3.length() - 2;
             assertThrows(HAProxyProtocolException.class,
-                () -> slowFailCh.writeInbound(copiedBuffer(headerPart3, CharsetUtil.US_ASCII)), "over " + discarded);
+                () -> slowFailCh.writeInbound(writeAscii(ch.bufferAllocator(), headerPart3)), "over " + discarded);
         } finally {
             assertFalse(slowFailCh.finishAndReleaseAll());
         }
@@ -208,7 +208,7 @@ public class HAProxyMessageDecoderTest {
             String headerPart1 = "PROXY TCP4 192.168.0.1 192.168.0.11 56324 " +
                                  "000000000000000000000000000000000000000000000000000000000000000000000443";
             assertThrows(HAProxyProtocolException.class,
-                () -> fastFailCh.writeInbound(copiedBuffer(headerPart1, CharsetUtil.US_ASCII)),
+                () -> fastFailCh.writeInbound(writeAscii(ch.bufferAllocator(), headerPart1)),
                 "over " + headerPart1.length());
         } finally {
             assertFalse(fastFailCh.finishAndReleaseAll());
@@ -218,7 +218,7 @@ public class HAProxyMessageDecoderTest {
     @Test
     public void testIncompleteHeader() {
         String header = "PROXY TCP4 192.168.0.1 192.168.0.11 56324";
-        ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII));
+        ch.writeInbound(writeAscii(ch.bufferAllocator(), header));
         assertNull(ch.readInbound());
         assertFalse(ch.finish());
     }
@@ -228,7 +228,7 @@ public class HAProxyMessageDecoderTest {
         Future<Void> closeFuture = ch.closeFuture();
         String header = "GET / HTTP/1.1\r\n";
         try {
-            ch.writeInbound(copiedBuffer(header, CharsetUtil.US_ASCII));
+            ch.writeInbound(writeAscii(ch.bufferAllocator(), header));
         } catch (HAProxyProtocolException ppex) {
             // swallow this exception since we're just testing to be sure the channel was closed
         }
@@ -304,21 +304,21 @@ public class HAProxyMessageDecoderTest {
         header[27] = (byte) 0xbb; // -----
 
         int startChannels = ch.pipeline().names().size();
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.TCP4, msg.proxiedProtocol());
-        assertEquals("192.168.0.1", msg.sourceAddress());
-        assertEquals("192.168.0.11", msg.destinationAddress());
-        assertEquals(56324, msg.sourcePort());
-        assertEquals(443, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.TCP4, msg.proxiedProtocol());
+            assertEquals("192.168.0.1", msg.sourceAddress());
+            assertEquals("192.168.0.11", msg.destinationAddress());
+            assertEquals(56324, msg.sourcePort());
+            assertEquals(443, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
@@ -360,21 +360,21 @@ public class HAProxyMessageDecoderTest {
         header[27] = (byte) 0xbb; // -----
 
         int startChannels = ch.pipeline().names().size();
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.UDP4, msg.proxiedProtocol());
-        assertEquals("192.168.0.1", msg.sourceAddress());
-        assertEquals("192.168.0.11", msg.destinationAddress());
-        assertEquals(56324, msg.sourcePort());
-        assertEquals(443, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.UDP4, msg.proxiedProtocol());
+            assertEquals("192.168.0.1", msg.sourceAddress());
+            assertEquals("192.168.0.11", msg.destinationAddress());
+            assertEquals(56324, msg.sourcePort());
+            assertEquals(443, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
@@ -440,21 +440,21 @@ public class HAProxyMessageDecoderTest {
         header[51] = (byte) 0xbb; // -----
 
         int startChannels = ch.pipeline().names().size();
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.TCP6, msg.proxiedProtocol());
-        assertEquals("2001:db8:85a3:0:0:8a2e:370:7334", msg.sourceAddress());
-        assertEquals("1050:0:0:0:5:600:300c:326b", msg.destinationAddress());
-        assertEquals(56324, msg.sourcePort());
-        assertEquals(443, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.TCP6, msg.proxiedProtocol());
+            assertEquals("2001:db8:85a3:0:0:8a2e:370:7334", msg.sourceAddress());
+            assertEquals("1050:0:0:0:5:600:300c:326b", msg.destinationAddress());
+            assertEquals(56324, msg.sourcePort());
+            assertEquals(443, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
@@ -519,21 +519,21 @@ public class HAProxyMessageDecoderTest {
         header[142] = 0x00; // -----
 
         int startChannels = ch.pipeline().names().size();
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.UNIX_STREAM, msg.proxiedProtocol());
-        assertEquals("/var/run/src.sock", msg.sourceAddress());
-        assertEquals("/var/run/dest.sock", msg.destinationAddress());
-        assertEquals(0, msg.sourcePort());
-        assertEquals(0, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.UNIX_STREAM, msg.proxiedProtocol());
+            assertEquals("/var/run/src.sock", msg.sourceAddress());
+            assertEquals("/var/run/dest.sock", msg.destinationAddress());
+            assertEquals(0, msg.sourcePort());
+            assertEquals(0, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
@@ -575,21 +575,21 @@ public class HAProxyMessageDecoderTest {
         header[27] = (byte) 0xbb; // -----
 
         int startChannels = ch.pipeline().names().size();
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.LOCAL, msg.command());
-        assertEquals(HAProxyProxiedProtocol.UNKNOWN, msg.proxiedProtocol());
-        assertNull(msg.sourceAddress());
-        assertNull(msg.destinationAddress());
-        assertEquals(0, msg.sourcePort());
-        assertEquals(0, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.LOCAL, msg.command());
+            assertEquals(HAProxyProxiedProtocol.UNKNOWN, msg.proxiedProtocol());
+            assertNull(msg.sourceAddress());
+            assertNull(msg.destinationAddress());
+            assertEquals(0, msg.sourcePort());
+            assertEquals(0, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
@@ -631,25 +631,25 @@ public class HAProxyMessageDecoderTest {
         header[27] = (byte) 0xbb; // -----
 
         int startChannels = ch.pipeline().names().size();
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.UNKNOWN, msg.proxiedProtocol());
-        assertNull(msg.sourceAddress());
-        assertNull(msg.destinationAddress());
-        assertEquals(0, msg.sourcePort());
-        assertEquals(0, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.UNKNOWN, msg.proxiedProtocol());
+            assertNull(msg.sourceAddress());
+            assertNull(msg.destinationAddress());
+            assertEquals(0, msg.sourcePort());
+            assertEquals(0, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
-    public void testV2WithSslTLVs() throws Exception {
+    public void testV2WithSslTLVs() {
         ch = new EmbeddedChannel(new HAProxyMessageDecoder());
 
         final byte[] bytes = {
@@ -658,102 +658,48 @@ public class HAProxyMessageDecoderTest {
         };
 
         int startChannels = ch.pipeline().names().size();
-        assertTrue(ch.writeInbound(copiedBuffer(bytes)));
+        assertTrue(ch.writeInbound(ch.bufferAllocator().copyOf(bytes)));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.TCP4, msg.proxiedProtocol());
+            assertEquals("127.0.0.1", msg.sourceAddress());
+            assertEquals("127.0.0.1", msg.destinationAddress());
+            assertEquals(51622, msg.sourcePort());
+            assertEquals(1881, msg.destinationPort());
+            final List<HAProxyTLV> tlvs = msg.tlvs();
 
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.TCP4, msg.proxiedProtocol());
-        assertEquals("127.0.0.1", msg.sourceAddress());
-        assertEquals("127.0.0.1", msg.destinationAddress());
-        assertEquals(51622, msg.sourcePort());
-        assertEquals(1881, msg.destinationPort());
-        final List<HAProxyTLV> tlvs = msg.tlvs();
+            assertEquals(3, tlvs.size());
+            final HAProxyTLV firstTlv = tlvs.get(0);
+            assertEquals(HAProxyTLV.Type.PP2_TYPE_SSL, firstTlv.type());
+            final HAProxySSLTLV sslTlv = (HAProxySSLTLV) firstTlv;
+            assertEquals(0, sslTlv.verify());
+            assertTrue(sslTlv.isPP2ClientSSL());
+            assertTrue(sslTlv.isPP2ClientCertSess());
+            assertFalse(sslTlv.isPP2ClientCertConn());
 
-        assertEquals(3, tlvs.size());
-        final HAProxyTLV firstTlv = tlvs.get(0);
-        assertEquals(HAProxyTLV.Type.PP2_TYPE_SSL, firstTlv.type());
-        final HAProxySSLTLV sslTlv = (HAProxySSLTLV) firstTlv;
-        assertEquals(0, sslTlv.verify());
-        assertTrue(sslTlv.isPP2ClientSSL());
-        assertTrue(sslTlv.isPP2ClientCertSess());
-        assertFalse(sslTlv.isPP2ClientCertConn());
+            final HAProxyTLV secondTlv = tlvs.get(1);
 
-        final HAProxyTLV secondTlv = tlvs.get(1);
+            assertEquals(HAProxyTLV.Type.PP2_TYPE_SSL_VERSION, secondTlv.type());
+            Buffer secondContentBuf = secondTlv.content();
+            byte[] secondContent = new byte[secondContentBuf.readableBytes()];
+            secondContentBuf.readBytes(secondContent, 0, secondContent.length);
+            assertArrayEquals("TLSv1".getBytes(CharsetUtil.US_ASCII), secondContent);
 
-        assertEquals(HAProxyTLV.Type.PP2_TYPE_SSL_VERSION, secondTlv.type());
-        ByteBuf secondContentBuf = secondTlv.content();
-        byte[] secondContent = new byte[secondContentBuf.readableBytes()];
-        secondContentBuf.readBytes(secondContent);
-        assertArrayEquals("TLSv1".getBytes(CharsetUtil.US_ASCII), secondContent);
+            final HAProxyTLV thirdTLV = tlvs.get(2);
+            assertEquals(HAProxyTLV.Type.PP2_TYPE_SSL_CN, thirdTLV.type());
+            Buffer thirdContentBuf = thirdTLV.content();
+            byte[] thirdContent = new byte[thirdContentBuf.readableBytes()];
+            thirdContentBuf.readBytes(thirdContent, 0, thirdContent.length);
+            assertArrayEquals("LEAF".getBytes(CharsetUtil.US_ASCII), thirdContent);
 
-        final HAProxyTLV thirdTLV = tlvs.get(2);
-        assertEquals(HAProxyTLV.Type.PP2_TYPE_SSL_CN, thirdTLV.type());
-        ByteBuf thirdContentBuf = thirdTLV.content();
-        byte[] thirdContent = new byte[thirdContentBuf.readableBytes()];
-        thirdContentBuf.readBytes(thirdContent);
-        assertArrayEquals("LEAF".getBytes(CharsetUtil.US_ASCII), thirdContent);
-
-        assertTrue(sslTlv.encapsulatedTLVs().contains(secondTlv));
-        assertTrue(sslTlv.encapsulatedTLVs().contains(thirdTLV));
-
-        assertTrue(0 < firstTlv.refCnt());
-        assertTrue(0 < secondTlv.refCnt());
-        assertTrue(0 < thirdTLV.refCnt());
-        assertTrue(msg.release());
-        assertEquals(0, firstTlv.refCnt());
-        assertEquals(0, secondTlv.refCnt());
-        assertEquals(0, thirdTLV.refCnt());
-
+            assertTrue(sslTlv.encapsulatedTLVs().contains(secondTlv));
+            assertTrue(sslTlv.encapsulatedTLVs().contains(thirdTLV));
+        }
         assertNull(ch.readInbound());
         assertFalse(ch.finish());
-    }
-
-    @Test
-    public void testReleaseHAProxyMessage() {
-        ch = new EmbeddedChannel(new HAProxyMessageDecoder());
-
-        final byte[] bytes = {
-                13, 10, 13, 10, 0, 13, 10, 81, 85, 73, 84, 10, 33, 17, 0, 35, 127, 0, 0, 1, 127, 0, 0, 1,
-                -55, -90, 7, 89, 32, 0, 20, 5, 0, 0, 0, 0, 33, 0, 5, 84, 76, 83, 118, 49, 34, 0, 4, 76, 69, 65, 70
-        };
-
-        int startChannels = ch.pipeline().names().size();
-        assertTrue(ch.writeInbound(copiedBuffer(bytes)));
-        Object msgObj = ch.readInbound();
-        assertEquals(startChannels - 1, ch.pipeline().names().size());
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-
-        final List<HAProxyTLV> tlvs = msg.tlvs();
-        assertEquals(3, tlvs.size());
-
-        assertEquals(1, msg.refCnt());
-        for (HAProxyTLV tlv : tlvs) {
-            assertEquals(3, tlv.refCnt());
-        }
-
-        // Retain the haproxy message
-        msg.retain();
-        assertEquals(2, msg.refCnt());
-        for (HAProxyTLV tlv : tlvs) {
-            assertEquals(3, tlv.refCnt());
-        }
-
-        // Decrease the haproxy message refCnt
-        msg.release();
-        assertEquals(1, msg.refCnt());
-        for (HAProxyTLV tlv : tlvs) {
-            assertEquals(3, tlv.refCnt());
-        }
-
-        // Release haproxy message, TLVs will be released with it
-        msg.release();
-        assertEquals(0, msg.refCnt());
-        for (HAProxyTLV tlv : tlvs) {
-            assertEquals(0, tlv.refCnt());
-        }
     }
 
     @Test
@@ -827,21 +773,21 @@ public class HAProxyMessageDecoderTest {
         header[235] = 0x01; // Payload
 
         int startChannels = ch.pipeline().names().size();
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         Object msgObj = ch.readInbound();
         assertEquals(startChannels - 1, ch.pipeline().names().size());
         assertTrue(msgObj instanceof HAProxyMessage);
-        HAProxyMessage msg = (HAProxyMessage) msgObj;
-        assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
-        assertEquals(HAProxyCommand.PROXY, msg.command());
-        assertEquals(HAProxyProxiedProtocol.UNIX_STREAM, msg.proxiedProtocol());
-        assertEquals("/var/run/src.sock", msg.sourceAddress());
-        assertEquals("/var/run/dest.sock", msg.destinationAddress());
-        assertEquals(0, msg.sourcePort());
-        assertEquals(0, msg.destinationPort());
-        assertNull(ch.readInbound());
-        assertFalse(ch.finish());
-        assertTrue(msg.release());
+        try (HAProxyMessage msg = (HAProxyMessage) msgObj) {
+            assertEquals(HAProxyProtocolVersion.V2, msg.protocolVersion());
+            assertEquals(HAProxyCommand.PROXY, msg.command());
+            assertEquals(HAProxyProxiedProtocol.UNIX_STREAM, msg.proxiedProtocol());
+            assertEquals("/var/run/src.sock", msg.sourceAddress());
+            assertEquals("/var/run/dest.sock", msg.destinationAddress());
+            assertEquals(0, msg.sourcePort());
+            assertEquals(0, msg.destinationPort());
+            assertNull(ch.readInbound());
+            assertFalse(ch.finish());
+        }
     }
 
     @Test
@@ -882,7 +828,7 @@ public class HAProxyMessageDecoderTest {
         header[26] = 0x01; // Destination Port
         header[27] = (byte) 0xbb; // -----
 
-        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(copiedBuffer(header)));
+        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(ch.bufferAllocator().copyOf(header)));
     }
 
     @Test
@@ -920,7 +866,7 @@ public class HAProxyMessageDecoderTest {
         header[24] = (byte) 0xdc; // Source Port
         header[25] = 0x04; // -----
 
-        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(copiedBuffer(header)));
+        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(ch.bufferAllocator().copyOf(header)));
     }
 
     @Test
@@ -961,7 +907,7 @@ public class HAProxyMessageDecoderTest {
         header[26] = 0x01; // Destination Port
         header[27] = (byte) 0xbb; // -----
 
-        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(copiedBuffer(header)));
+        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(ch.bufferAllocator().copyOf(header)));
     }
 
     @Test
@@ -1002,7 +948,7 @@ public class HAProxyMessageDecoderTest {
         header[26] = 0x01; // Destination Port
         header[27] = (byte) 0xbb; // -----
 
-        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(copiedBuffer(header)));
+        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(ch.bufferAllocator().copyOf(header)));
     }
 
     @Test
@@ -1045,7 +991,7 @@ public class HAProxyMessageDecoderTest {
         header[26] = 0x01; // Destination Port
         header[27] = (byte) 0xbb; // -----
 
-        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(copiedBuffer(header)));
+        assertThrows(HAProxyProtocolException.class, () -> ch.writeInbound(ch.bufferAllocator().copyOf(header)));
     }
 
     @Test
@@ -1066,55 +1012,56 @@ public class HAProxyMessageDecoderTest {
 
         header[12] = 0x21; // v2, cmd=PROXY
 
-        ch.writeInbound(copiedBuffer(header));
+        ch.writeInbound(ch.bufferAllocator().copyOf(header));
         assertNull(ch.readInbound());
         assertFalse(ch.finish());
     }
 
     @Test
     public void testDetectProtocol() {
-        final ByteBuf validHeaderV1 = copiedBuffer("PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n",
-                                                   CharsetUtil.US_ASCII);
-        ProtocolDetectionResult<HAProxyProtocolVersion> result = HAProxyMessageDecoder.detectProtocol(validHeaderV1);
-        assertEquals(ProtocolDetectionState.DETECTED, result.state());
-        assertEquals(HAProxyProtocolVersion.V1, result.detectedProtocol());
-        validHeaderV1.release();
+        ProtocolDetectionResult<HAProxyProtocolVersion> result;
+        try (Buffer validHeaderV1 = writeAscii(preferredAllocator(),
+                "PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n")) {
+            result = HAProxyMessageDecoder.detectProtocol(validHeaderV1);
+            assertEquals(ProtocolDetectionState.DETECTED, result.state());
+            assertEquals(HAProxyProtocolVersion.V1, result.detectedProtocol());
+        }
 
-        final ByteBuf invalidHeader = copiedBuffer("Invalid header", CharsetUtil.US_ASCII);
-        result = HAProxyMessageDecoder.detectProtocol(invalidHeader);
-        assertEquals(ProtocolDetectionState.INVALID, result.state());
-        assertNull(result.detectedProtocol());
-        invalidHeader.release();
+        try (Buffer invalidHeader = writeAscii(preferredAllocator(), "Invalid header")) {
+            result = HAProxyMessageDecoder.detectProtocol(invalidHeader);
+            assertEquals(ProtocolDetectionState.INVALID, result.state());
+            assertNull(result.detectedProtocol());
+        }
 
-        final ByteBuf validHeaderV2 = buffer();
-        validHeaderV2.writeByte(0x0D);
-        validHeaderV2.writeByte(0x0A);
-        validHeaderV2.writeByte(0x0D);
-        validHeaderV2.writeByte(0x0A);
-        validHeaderV2.writeByte(0x00);
-        validHeaderV2.writeByte(0x0D);
-        validHeaderV2.writeByte(0x0A);
-        validHeaderV2.writeByte(0x51);
-        validHeaderV2.writeByte(0x55);
-        validHeaderV2.writeByte(0x49);
-        validHeaderV2.writeByte(0x54);
-        validHeaderV2.writeByte(0x0A);
-        result = HAProxyMessageDecoder.detectProtocol(validHeaderV2);
-        assertEquals(ProtocolDetectionState.DETECTED, result.state());
-        assertEquals(HAProxyProtocolVersion.V2, result.detectedProtocol());
-        validHeaderV2.release();
+        try (Buffer validHeaderV2 = preferredAllocator().allocate(12)) {
+            validHeaderV2.writeByte((byte) 0x0D);
+            validHeaderV2.writeByte((byte) 0x0A);
+            validHeaderV2.writeByte((byte) 0x0D);
+            validHeaderV2.writeByte((byte) 0x0A);
+            validHeaderV2.writeByte((byte) 0x00);
+            validHeaderV2.writeByte((byte) 0x0D);
+            validHeaderV2.writeByte((byte) 0x0A);
+            validHeaderV2.writeByte((byte) 0x51);
+            validHeaderV2.writeByte((byte) 0x55);
+            validHeaderV2.writeByte((byte) 0x49);
+            validHeaderV2.writeByte((byte) 0x54);
+            validHeaderV2.writeByte((byte) 0x0A);
+            result = HAProxyMessageDecoder.detectProtocol(validHeaderV2);
+            assertEquals(ProtocolDetectionState.DETECTED, result.state());
+            assertEquals(HAProxyProtocolVersion.V2, result.detectedProtocol());
+        }
 
-        final ByteBuf incompleteHeader = buffer();
-        incompleteHeader.writeByte(0x0D);
-        incompleteHeader.writeByte(0x0A);
-        incompleteHeader.writeByte(0x0D);
-        incompleteHeader.writeByte(0x0A);
-        incompleteHeader.writeByte(0x00);
-        incompleteHeader.writeByte(0x0D);
-        incompleteHeader.writeByte(0x0A);
-        result = HAProxyMessageDecoder.detectProtocol(incompleteHeader);
-        assertEquals(ProtocolDetectionState.NEEDS_MORE_DATA, result.state());
-        assertNull(result.detectedProtocol());
-        incompleteHeader.release();
+        try (Buffer incompleteHeader = preferredAllocator().allocate(7)) {
+            incompleteHeader.writeByte((byte) 0x0D);
+            incompleteHeader.writeByte((byte) 0x0A);
+            incompleteHeader.writeByte((byte) 0x0D);
+            incompleteHeader.writeByte((byte) 0x0A);
+            incompleteHeader.writeByte((byte) 0x00);
+            incompleteHeader.writeByte((byte) 0x0D);
+            incompleteHeader.writeByte((byte) 0x0A);
+            result = HAProxyMessageDecoder.detectProtocol(incompleteHeader);
+            assertEquals(ProtocolDetectionState.NEEDS_MORE_DATA, result.state());
+            assertNull(result.detectedProtocol());
+        }
     }
 }

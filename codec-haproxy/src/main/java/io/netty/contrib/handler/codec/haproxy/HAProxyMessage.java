@@ -17,15 +17,14 @@ package io.netty.contrib.handler.codec.haproxy;
 
 import static java.util.Objects.requireNonNull;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol.AddressFamily;
-import io.netty5.util.AbstractReferenceCounted;
+import io.netty5.buffer.api.Buffer;
+import io.netty5.buffer.api.Resource;
+import io.netty5.buffer.api.Send;
+import io.netty5.buffer.api.internal.Statics;
 import io.netty5.util.ByteProcessor;
 import io.netty5.util.CharsetUtil;
 import io.netty5.util.NetUtil;
-import io.netty5.util.ResourceLeakDetector;
-import io.netty5.util.ResourceLeakDetectorFactory;
-import io.netty5.util.ResourceLeakTracker;
 import io.netty5.util.internal.StringUtil;
 
 import java.util.ArrayList;
@@ -35,11 +34,8 @@ import java.util.List;
 /**
  * Message container for decoded HAProxy proxy protocol parameters
  */
-public final class HAProxyMessage extends AbstractReferenceCounted {
-    private static final ResourceLeakDetector<HAProxyMessage> leakDetector =
-            ResourceLeakDetectorFactory.instance().newResourceLeakDetector(HAProxyMessage.class);
+public final class HAProxyMessage implements Resource<HAProxyMessage> {
 
-    private final ResourceLeakTracker<HAProxyMessage> leak;
     private final HAProxyProtocolVersion protocolVersion;
     private final HAProxyCommand command;
     private final HAProxyProxiedProtocol proxiedProtocol;
@@ -111,8 +107,6 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         this.sourcePort = sourcePort;
         this.destinationPort = destinationPort;
         this.tlvs = Collections.unmodifiableList(tlvs);
-
-        leak = leakDetector.track(this);
     }
 
     /**
@@ -122,7 +116,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
      * @return                           {@link HAProxyMessage} instance
      * @throws HAProxyProtocolException  if any portion of the header is invalid
      */
-    static HAProxyMessage decodeHeader(ByteBuf header) {
+    static HAProxyMessage decodeHeader(Buffer header) {
         requireNonNull(header, "header");
 
         if (header.readableBytes() < 16) {
@@ -131,7 +125,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         }
 
         // Per spec, the 13th byte is the protocol version and command byte
-        header.skipBytes(12);
+        header.skipReadable(12);
         final byte verCmdByte = header.readByte();
 
         HAProxyProtocolVersion ver;
@@ -185,27 +179,19 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                     "incomplete UNIX socket address information: " +
                             Math.min(addressInfoLen, header.readableBytes()) + " bytes (expected: 216+ bytes)");
             }
-            int startIdx = header.readerIndex();
-            int addressEnd = header.forEachByte(startIdx, 108, ByteProcessor.FIND_NUL);
-            if (addressEnd == -1) {
-                addressLen = 108;
-            } else {
-                addressLen = addressEnd - startIdx;
-            }
-            srcAddress = header.toString(startIdx, addressLen, CharsetUtil.US_ASCII);
+            int startIdx = header.readerOffset();
+            int bytes = header.openCursor(startIdx, 108).process(ByteProcessor.FIND_NUL);
+            addressLen = bytes == -1 ? 108 : bytes;
+            srcAddress = Statics.copyToCharSequence(header, startIdx, addressLen, CharsetUtil.US_ASCII).toString();
 
             startIdx += 108;
 
-            addressEnd = header.forEachByte(startIdx, 108, ByteProcessor.FIND_NUL);
-            if (addressEnd == -1) {
-                addressLen = 108;
-            } else {
-                addressLen = addressEnd - startIdx;
-            }
-            dstAddress = header.toString(startIdx, addressLen, CharsetUtil.US_ASCII);
+            bytes = header.openCursor(startIdx, 108).process(ByteProcessor.FIND_NUL);
+            addressLen = bytes == -1 ? 108 : bytes;
+            dstAddress = Statics.copyToCharSequence(header, startIdx, addressLen, CharsetUtil.US_ASCII).toString();
             // AF_UNIX defines that exactly 108 bytes are reserved for the address. The previous methods
             // did not increase the reader index although we already consumed the information.
-            header.readerIndex(startIdx + 108);
+            header.readerOffset(startIdx + 108);
         } else {
             if (addressFamily == AddressFamily.AF_IPv4) {
                 // IPv4 requires 12 bytes for address information
@@ -240,7 +226,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         return new HAProxyMessage(ver, cmd, protAndFam, srcAddress, dstAddress, srcPort, dstPort, tlvs);
     }
 
-    private static List<HAProxyTLV> readTlvs(final ByteBuf header) {
+    private static List<HAProxyTLV> readTlvs(final Buffer header) {
         HAProxyTLV haProxyTLV = readNextTLV(header);
         if (haProxyTLV == null) {
             return Collections.emptyList();
@@ -257,7 +243,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         return haProxyTLVs;
     }
 
-    private static HAProxyTLV readNextTLV(final ByteBuf header) {
+    private static HAProxyTLV readNextTLV(final Buffer header) {
 
         // We need at least 4 bytes for a TLV
         if (header.readableBytes() < 4) {
@@ -270,21 +256,20 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         final int length = header.readUnsignedShort();
         switch (type) {
         case PP2_TYPE_SSL:
-            final ByteBuf rawContent = header.retainedSlice(header.readerIndex(), length);
-            final ByteBuf byteBuf = header.readSlice(length);
-            final byte client = byteBuf.readByte();
-            final int verify = byteBuf.readInt();
+            final Buffer rawContent = header.split(length);
+            final byte client = header.readByte();
+            final int verify = header.readInt();
 
-            if (byteBuf.readableBytes() >= 4) {
+            if (header.readableBytes() >= 4) {
 
                 final List<HAProxyTLV> encapsulatedTlvs = new ArrayList<>(4);
                 do {
-                    final HAProxyTLV haProxyTLV = readNextTLV(byteBuf);
+                    final HAProxyTLV haProxyTLV = readNextTLV(header);
                     if (haProxyTLV == null) {
                         break;
                     }
                     encapsulatedTlvs.add(haProxyTLV);
-                } while (byteBuf.readableBytes() >= 4);
+                } while (header.readableBytes() >= 4);
 
                 return new HAProxySSLTLV(verify, client, encapsulatedTlvs, rawContent);
             }
@@ -296,7 +281,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         case PP2_TYPE_SSL_CN:
         case PP2_TYPE_NETNS:
         case OTHER:
-            return new HAProxyTLV(type, typeAsByte, header.readRetainedSlice(length));
+            return new HAProxyTLV(type, typeAsByte, header.readSplit(length));
         default:
             return null;
         }
@@ -371,7 +356,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
      * @param addressLen number of bytes to read (4 bytes for IPv4, 16 bytes for IPv6)
      * @return           string representation of the ip address
      */
-    private static String ipBytesToString(ByteBuf header, int addressLen) {
+    private static String ipBytesToString(Buffer header, int addressLen) {
         StringBuilder sb = new StringBuilder();
         final int ipv4Len = 4;
         final int ipv6Len = 8;
@@ -547,62 +532,54 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     @Override
-    public HAProxyMessage touch() {
-        tryRecord();
-        return (HAProxyMessage) super.touch();
-    }
-
-    @Override
-    public HAProxyMessage touch(Object hint) {
-        if (leak != null) {
-            leak.record(hint);
-        }
-        return this;
-    }
-
-    @Override
-    public HAProxyMessage retain() {
-        tryRecord();
-        return (HAProxyMessage) super.retain();
-    }
-
-    @Override
-    public HAProxyMessage retain(int increment) {
-        tryRecord();
-        return (HAProxyMessage) super.retain(increment);
-    }
-
-    @Override
-    public boolean release() {
-        tryRecord();
-        return super.release();
-    }
-
-    @Override
-    public boolean release(int decrement) {
-        tryRecord();
-        return super.release(decrement);
-    }
-
-    private void tryRecord() {
-        if (leak != null) {
-            leak.record();
-        }
-    }
-
-    @Override
-    protected void deallocate() {
-        try {
-            for (HAProxyTLV tlv : tlvs) {
-                tlv.release();
-            }
-        } finally {
-            final ResourceLeakTracker<HAProxyMessage> leak = this.leak;
-            if (leak != null) {
-                boolean closed = leak.close(this);
-                assert closed;
+    public void close() {
+        RuntimeException re = null;
+        for (HAProxyTLV tlv : tlvs) {
+            try {
+                tlv.close();
+            } catch (RuntimeException e) {
+                if (re == null) {
+                    re = e;
+                } else {
+                    re.addSuppressed(e);
+                }
             }
         }
+        if (re != null) {
+            throw re;
+        }
+    }
+
+    @Override
+    public boolean isAccessible() {
+        for (HAProxyTLV tlv : tlvs) {
+            if (!tlv.isAccessible()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public Send<HAProxyMessage> send() {
+        if (tlvs.isEmpty()) {
+            return Send.sending(HAProxyMessage.class, () ->
+                    new HAProxyMessage(protocolVersion, command, proxiedProtocol, sourceAddress, destinationAddress,
+                            sourcePort, destinationPort, Collections.emptyList()));
+        }
+
+        List<Send<HAProxyTLV>> sentTlvs = new ArrayList<>(tlvs.size());
+        for (HAProxyTLV tlv : tlvs) {
+            sentTlvs.add(tlv.send());
+        }
+        return Send.sending(HAProxyMessage.class, () -> {
+            List<HAProxyTLV> receivedTlvs = new ArrayList<>(sentTlvs.size());
+            for (Send<HAProxyTLV> sendTlv : sentTlvs) {
+                receivedTlvs.add(sendTlv.receive());
+            }
+            return new HAProxyMessage(protocolVersion, command, proxiedProtocol, sourceAddress, destinationAddress,
+                    sourcePort, destinationPort, receivedTlvs);
+        });
     }
 
     @Override

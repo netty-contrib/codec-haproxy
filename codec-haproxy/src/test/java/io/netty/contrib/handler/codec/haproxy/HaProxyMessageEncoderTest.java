@@ -15,9 +15,8 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
+import io.netty5.buffer.api.Buffer;
+import io.netty5.buffer.api.internal.Statics;
 import io.netty5.channel.embedded.EmbeddedChannel;
 import io.netty.contrib.handler.codec.haproxy.HAProxyTLV.Type;
 import io.netty5.util.ByteProcessor;
@@ -30,6 +29,7 @@ import java.util.List;
 
 import static io.netty.contrib.handler.codec.haproxy.HAProxyConstants.*;
 import static io.netty.contrib.handler.codec.haproxy.HAProxyMessageEncoder.*;
+import static io.netty5.buffer.ByteBufUtil.writeAscii;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,12 +51,10 @@ public class HaProxyMessageEncoderTest {
                 "192.168.0.1", "192.168.0.11", 56324, 443);
         assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
-
-        assertEquals("PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n",
-                     byteBuf.toString(CharsetUtil.US_ASCII));
-
-        byteBuf.release();
+        try (Buffer buffer = ch.readOutbound()) {
+            assertEquals("PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n",
+                    buffer.toString(CharsetUtil.US_ASCII));
+        }
         assertFalse(ch.finish());
     }
 
@@ -69,12 +67,10 @@ public class HaProxyMessageEncoderTest {
                 "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "1050:0:0:0:5:600:300c:326b", 56324, 443);
         assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
-
-        assertEquals("PROXY TCP6 2001:0db8:85a3:0000:0000:8a2e:0370:7334 1050:0:0:0:5:600:300c:326b 56324 443\r\n",
-                     byteBuf.toString(CharsetUtil.US_ASCII));
-
-        byteBuf.release();
+        try (Buffer buffer = ch.readOutbound()) {
+            assertEquals("PROXY TCP6 2001:0db8:85a3:0000:0000:8a2e:0370:7334 1050:0:0:0:5:600:300c:326b 56324 443\r\n",
+                    buffer.toString(CharsetUtil.US_ASCII));
+        }
         assertFalse(ch.finish());
     }
 
@@ -87,43 +83,44 @@ public class HaProxyMessageEncoderTest {
                 "192.168.0.1", "192.168.0.11", 56324, 443);
         assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
+        try (Buffer buffer = ch.readOutbound()) {
+            // header
+            byte[] headerBytes = new byte[12];
+            buffer.readBytes(headerBytes, 0, headerBytes.length);
+            assertArrayEquals(BINARY_PREFIX, headerBytes);
 
-        // header
-        byte[] headerBytes = ByteBufUtil.getBytes(byteBuf, 0, 12);
-        assertArrayEquals(BINARY_PREFIX, headerBytes);
+            // command
+            byte commandByte = buffer.readByte();
+            assertEquals(0x02, (commandByte & 0xf0) >> 4);
+            assertEquals(0x01, commandByte & 0x0f);
 
-        // command
-        byte commandByte = byteBuf.getByte(12);
-        assertEquals(0x02, (commandByte & 0xf0) >> 4);
-        assertEquals(0x01, commandByte & 0x0f);
+            // transport protocol, address family
+            byte transportByte = buffer.readByte();
+            assertEquals(0x01, (transportByte & 0xf0) >> 4);
+            assertEquals(0x01, transportByte & 0x0f);
 
-        // transport protocol, address family
-        byte transportByte = byteBuf.getByte(13);
-        assertEquals(0x01, (transportByte & 0xf0) >> 4);
-        assertEquals(0x01, transportByte & 0x0f);
+            // source address length
+            int sourceAddrLength = buffer.readUnsignedShort();
+            assertEquals(12, sourceAddrLength);
 
-        // source address length
-        int sourceAddrLength = byteBuf.getUnsignedShort(14);
-        assertEquals(12, sourceAddrLength);
+            // source address
+            byte[] sourceAddr = new byte[4];
+            buffer.readBytes(sourceAddr, 0, sourceAddr.length);
+            assertArrayEquals(new byte[]{(byte) 0xc0, (byte) 0xa8, 0x00, 0x01}, sourceAddr);
 
-        // source address
-        byte[] sourceAddr = ByteBufUtil.getBytes(byteBuf, 16, 4);
-        assertArrayEquals(new byte[] { (byte) 0xc0, (byte) 0xa8, 0x00, 0x01 }, sourceAddr);
+            // destination address
+            byte[] destAddr = new byte[4];
+            buffer.readBytes(destAddr, 0, destAddr.length);
+            assertArrayEquals(new byte[]{(byte) 0xc0, (byte) 0xa8, 0x00, 0x0b}, destAddr);
 
-        // destination address
-        byte[] destAddr = ByteBufUtil.getBytes(byteBuf, 20, 4);
-        assertArrayEquals(new byte[] { (byte) 0xc0, (byte) 0xa8, 0x00, 0x0b }, destAddr);
+            // source port
+            int sourcePort = buffer.getUnsignedShort(24);
+            assertEquals(56324, sourcePort);
 
-        // source port
-        int sourcePort = byteBuf.getUnsignedShort(24);
-        assertEquals(56324, sourcePort);
-
-        // destination port
-        int destPort = byteBuf.getUnsignedShort(26);
-        assertEquals(443, destPort);
-
-        byteBuf.release();
+            // destination port
+            int destPort = buffer.getUnsignedShort(26);
+            assertEquals(443, destPort);
+        }
         assertFalse(ch.finish());
     }
 
@@ -136,50 +133,51 @@ public class HaProxyMessageEncoderTest {
                 "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "1050:0:0:0:5:600:300c:326b", 56324, 443);
         assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
+        try (Buffer buffer = ch.readOutbound()) {
+            // header
+            byte[] headerBytes = new byte[12];
+            buffer.readBytes(headerBytes, 0, headerBytes.length);
+            assertArrayEquals(BINARY_PREFIX, headerBytes);
 
-        // header
-        byte[] headerBytes = ByteBufUtil.getBytes(byteBuf, 0, 12);
-        assertArrayEquals(BINARY_PREFIX, headerBytes);
+            // command
+            byte commandByte = buffer.readByte();
+            assertEquals(0x02, (commandByte & 0xf0) >> 4);
+            assertEquals(0x01, commandByte & 0x0f);
 
-        // command
-        byte commandByte = byteBuf.getByte(12);
-        assertEquals(0x02, (commandByte & 0xf0) >> 4);
-        assertEquals(0x01, commandByte & 0x0f);
+            // transport protocol, address family
+            byte transportByte = buffer.readByte();
+            assertEquals(0x02, (transportByte & 0xf0) >> 4);
+            assertEquals(0x01, transportByte & 0x0f);
 
-        // transport protocol, address family
-        byte transportByte = byteBuf.getByte(13);
-        assertEquals(0x02, (transportByte & 0xf0) >> 4);
-        assertEquals(0x01, transportByte & 0x0f);
+            // source address length
+            int sourceAddrLength = buffer.readUnsignedShort();
+            assertEquals(IPv6_ADDRESS_BYTES_LENGTH, sourceAddrLength);
 
-        // source address length
-        int sourceAddrLength = byteBuf.getUnsignedShort(14);
-        assertEquals(IPv6_ADDRESS_BYTES_LENGTH, sourceAddrLength);
+            // source address
+            byte[] sourceAddr = new byte[16];
+            buffer.readBytes(sourceAddr, 0, sourceAddr.length);
+            assertArrayEquals(new byte[]{
+                    (byte) 0x20, (byte) 0x01, 0x0d, (byte) 0xb8,
+                    (byte) 0x85, (byte) 0xa3, 0x00, 0x00, 0x00, 0x00, (byte) 0x8a, 0x2e,
+                    0x03, 0x70, 0x73, 0x34
+            }, sourceAddr);
 
-        // source address
-        byte[] sourceAddr = ByteBufUtil.getBytes(byteBuf, 16, 16);
-        assertArrayEquals(new byte[] {
-                (byte) 0x20, (byte) 0x01, 0x0d, (byte) 0xb8,
-                (byte) 0x85, (byte) 0xa3, 0x00, 0x00, 0x00, 0x00, (byte) 0x8a, 0x2e,
-                0x03, 0x70, 0x73, 0x34
-        }, sourceAddr);
+            // destination address
+            byte[] destAddr = new byte[16];
+            buffer.readBytes(destAddr, 0, destAddr.length);
+            assertArrayEquals(new byte[]{
+                    (byte) 0x10, (byte) 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x05, 0x06, 0x00, 0x30, 0x0c, 0x32, 0x6b
+            }, destAddr);
 
-        // destination address
-        byte[] destAddr = ByteBufUtil.getBytes(byteBuf, 32, 16);
-        assertArrayEquals(new byte[] {
-                (byte) 0x10, (byte) 0x50, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x05, 0x06, 0x00, 0x30, 0x0c, 0x32, 0x6b
-        }, destAddr);
+            // source port
+            int sourcePort = buffer.getUnsignedShort(48);
+            assertEquals(56324, sourcePort);
 
-        // source port
-        int sourcePort = byteBuf.getUnsignedShort(48);
-        assertEquals(56324, sourcePort);
-
-        // destination port
-        int destPort = byteBuf.getUnsignedShort(50);
-        assertEquals(443, destPort);
-
-        byteBuf.release();
+            // destination port
+            int destPort = buffer.getUnsignedShort(50);
+            assertEquals(443, destPort);
+        }
         assertFalse(ch.finish());
     }
 
@@ -192,37 +190,34 @@ public class HaProxyMessageEncoderTest {
                 "/var/run/src.sock", "/var/run/dst.sock", 0, 0);
         assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
+        try (Buffer buffer = ch.readOutbound()) {
+            // header
+            byte[] headerBytes = new byte[12];
+            buffer.readBytes(headerBytes, 0, headerBytes.length);
+            assertArrayEquals(BINARY_PREFIX, headerBytes);
 
-        // header
-        byte[] headerBytes = ByteBufUtil.getBytes(byteBuf, 0, 12);
-        assertArrayEquals(BINARY_PREFIX, headerBytes);
+            // command
+            byte commandByte = buffer.getByte(12);
+            assertEquals(0x02, (commandByte & 0xf0) >> 4);
+            assertEquals(0x01, commandByte & 0x0f);
 
-        // command
-        byte commandByte = byteBuf.getByte(12);
-        assertEquals(0x02, (commandByte & 0xf0) >> 4);
-        assertEquals(0x01, commandByte & 0x0f);
+            // transport protocol, address family
+            byte transportByte = buffer.getByte(13);
+            assertEquals(0x03, (transportByte & 0xf0) >> 4);
+            assertEquals(0x01, transportByte & 0x0f);
 
-        // transport protocol, address family
-        byte transportByte = byteBuf.getByte(13);
-        assertEquals(0x03, (transportByte & 0xf0) >> 4);
-        assertEquals(0x01, transportByte & 0x0f);
+            // address length
+            int addrLength = buffer.getUnsignedShort(14);
+            assertEquals(TOTAL_UNIX_ADDRESS_BYTES_LENGTH, addrLength);
 
-        // address length
-        int addrLength = byteBuf.getUnsignedShort(14);
-        assertEquals(TOTAL_UNIX_ADDRESS_BYTES_LENGTH, addrLength);
+            // source address
+            int bytes = buffer.openCursor(16, 108).process(ByteProcessor.FIND_NUL);
+            assertEquals("/var/run/src.sock", Statics.copyToCharSequence(buffer, 16, bytes, CharsetUtil.US_ASCII));
 
-        // source address
-        int srcAddrEnd = byteBuf.forEachByte(16, 108, ByteProcessor.FIND_NUL);
-        assertEquals("/var/run/src.sock",
-                     byteBuf.slice(16, srcAddrEnd - 16).toString(CharsetUtil.US_ASCII));
-
-        // destination address
-        int dstAddrEnd = byteBuf.forEachByte(124, 108, ByteProcessor.FIND_NUL);
-        assertEquals("/var/run/dst.sock",
-                     byteBuf.slice(124, dstAddrEnd - 124).toString(CharsetUtil.US_ASCII));
-
-        byteBuf.release();
+            // destination address
+            bytes = buffer.openCursor(124, 108).process(ByteProcessor.FIND_NUL);
+            assertEquals("/var/run/dst.sock", Statics.copyToCharSequence(buffer, 124, bytes, CharsetUtil.US_ASCII));
+        }
         assertFalse(ch.finish());
     }
 
@@ -230,42 +225,47 @@ public class HaProxyMessageEncoderTest {
     public void testTLVEncodeProxy() {
         EmbeddedChannel ch = new EmbeddedChannel(INSTANCE);
 
-        List<HAProxyTLV> tlvs = new ArrayList<HAProxyTLV>();
+        List<HAProxyTLV> tlvs = new ArrayList<>();
 
-        ByteBuf helloWorld = Unpooled.copiedBuffer("hello world", CharsetUtil.US_ASCII);
-        HAProxyTLV alpnTlv = new HAProxyTLV(Type.PP2_TYPE_ALPN, (byte) 0x01, helloWorld.copy());
-        tlvs.add(alpnTlv);
+        try (Buffer helloWorld = writeAscii(ch.bufferAllocator(), "hello world");
+             Buffer arbitrary = writeAscii(ch.bufferAllocator(), "an arbitrary string")) {
+            HAProxyTLV alpnTlv = new HAProxyTLV(Type.PP2_TYPE_ALPN, (byte) 0x01, helloWorld.copy());
+            tlvs.add(alpnTlv);
 
-        ByteBuf arbitrary = Unpooled.copiedBuffer("an arbitrary string", CharsetUtil.US_ASCII);
-        HAProxyTLV authorityTlv = new HAProxyTLV(Type.PP2_TYPE_AUTHORITY, (byte) 0x01, arbitrary.copy());
-        tlvs.add(authorityTlv);
+            HAProxyTLV authorityTlv = new HAProxyTLV(Type.PP2_TYPE_AUTHORITY, (byte) 0x01, arbitrary.copy());
+            tlvs.add(authorityTlv);
 
-        HAProxyMessage message = new HAProxyMessage(
-                HAProxyProtocolVersion.V2, HAProxyCommand.PROXY, HAProxyProxiedProtocol.TCP4,
-                "192.168.0.1", "192.168.0.11", 56324, 443, tlvs);
-        assertTrue(ch.writeOutbound(message));
+            HAProxyMessage message = new HAProxyMessage(
+                    HAProxyProtocolVersion.V2, HAProxyCommand.PROXY, HAProxyProxiedProtocol.TCP4,
+                    "192.168.0.1", "192.168.0.11", 56324, 443, tlvs);
+            assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
+            try (Buffer buffer = ch.readOutbound()) {
+                // length
+                assertEquals(buffer.getUnsignedShort(14), buffer.readableBytes() - V2_HEADER_BYTES_LENGTH);
 
-        // length
-        assertEquals(byteBuf.getUnsignedShort(14), byteBuf.readableBytes() - V2_HEADER_BYTES_LENGTH);
+                // skip to tlv section
+                buffer.skipReadable(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
 
-        // skip to tlv section
-        ByteBuf tlv = byteBuf.skipBytes(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
+                // alpn tlv
+                assertEquals(alpnTlv.typeByteValue(), buffer.readByte());
+                short bufLength = buffer.readShort();
+                assertEquals(helloWorld.readableBytes(), bufLength);
+                try (Buffer copy = buffer.copy(buffer.readerOffset(), bufLength)) {
+                    assertEquals(helloWorld, copy);
+                }
 
-        // alpn tlv
-        assertEquals(alpnTlv.typeByteValue(), tlv.readByte());
-        short bufLength = tlv.readShort();
-        assertEquals(helloWorld.array().length, bufLength);
-        assertEquals(helloWorld, tlv.readSlice(bufLength));
+                buffer.skipReadable(bufLength);
 
-        // authority tlv
-        assertEquals(authorityTlv.typeByteValue(), tlv.readByte());
-        bufLength = tlv.readShort();
-        assertEquals(arbitrary.array().length, bufLength);
-        assertEquals(arbitrary, tlv.readSlice(bufLength));
-
-        byteBuf.release();
+                // authority tlv
+                assertEquals(authorityTlv.typeByteValue(), buffer.readByte());
+                bufLength = buffer.readShort();
+                assertEquals(arbitrary.readableBytes(), bufLength);
+                try (Buffer copy = buffer.copy(buffer.readerOffset(), bufLength)) {
+                    assertEquals(arbitrary, copy);
+                }
+            }
+        }
         assertFalse(ch.finish());
     }
 
@@ -273,54 +273,59 @@ public class HaProxyMessageEncoderTest {
     public void testSslTLVEncodeProxy() {
         EmbeddedChannel ch = new EmbeddedChannel(INSTANCE);
 
-        List<HAProxyTLV> tlvs = new ArrayList<HAProxyTLV>();
+        List<HAProxyTLV> tlvs = new ArrayList<>();
 
-        ByteBuf helloWorld = Unpooled.copiedBuffer("hello world", CharsetUtil.US_ASCII);
-        HAProxyTLV alpnTlv = new HAProxyTLV(Type.PP2_TYPE_ALPN, (byte) 0x01, helloWorld.copy());
-        tlvs.add(alpnTlv);
+        try (Buffer helloWorld = writeAscii(ch.bufferAllocator(), "hello world");
+             Buffer arbitrary = writeAscii(ch.bufferAllocator(), "an arbitrary string")) {
+            HAProxyTLV alpnTlv = new HAProxyTLV(Type.PP2_TYPE_ALPN, (byte) 0x01, helloWorld.copy());
+            tlvs.add(alpnTlv);
 
-        ByteBuf arbitrary = Unpooled.copiedBuffer("an arbitrary string", CharsetUtil.US_ASCII);
-        HAProxyTLV authorityTlv = new HAProxyTLV(Type.PP2_TYPE_AUTHORITY, (byte) 0x01, arbitrary.copy());
-        tlvs.add(authorityTlv);
+            HAProxyTLV authorityTlv = new HAProxyTLV(Type.PP2_TYPE_AUTHORITY, (byte) 0x01, arbitrary.copy());
+            tlvs.add(authorityTlv);
 
-        ByteBuf sslContent = Unpooled.copiedBuffer("some ssl content", CharsetUtil.US_ASCII);
-        HAProxySSLTLV haProxySSLTLV = new HAProxySSLTLV(1, (byte) 0x01, tlvs, sslContent.copy());
+            HAProxySSLTLV haProxySSLTLV = new HAProxySSLTLV(1, (byte) 0x01, tlvs,
+                    writeAscii(ch.bufferAllocator(), "some ssl content"));
 
-        HAProxyMessage message = new HAProxyMessage(
-                HAProxyProtocolVersion.V2, HAProxyCommand.PROXY, HAProxyProxiedProtocol.TCP4,
-                "192.168.0.1", "192.168.0.11", 56324, 443,
-                Collections.<HAProxyTLV>singletonList(haProxySSLTLV));
-        assertTrue(ch.writeOutbound(message));
+            HAProxyMessage message = new HAProxyMessage(
+                    HAProxyProtocolVersion.V2, HAProxyCommand.PROXY, HAProxyProxiedProtocol.TCP4,
+                    "192.168.0.1", "192.168.0.11", 56324, 443,
+                    Collections.<HAProxyTLV>singletonList(haProxySSLTLV));
+            assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
+            try (Buffer buffer = ch.readOutbound()) {
+                assertEquals(buffer.getUnsignedShort(14), buffer.readableBytes() - V2_HEADER_BYTES_LENGTH);
+                buffer.skipReadable(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
 
-        assertEquals(byteBuf.getUnsignedShort(14), byteBuf.readableBytes() - V2_HEADER_BYTES_LENGTH);
-        ByteBuf tlv = byteBuf.skipBytes(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
+                // ssl tlv type
+                assertEquals(haProxySSLTLV.typeByteValue(), buffer.readByte());
 
-        // ssl tlv type
-        assertEquals(haProxySSLTLV.typeByteValue(), tlv.readByte());
+                // length
+                int bufLength = buffer.readUnsignedShort();
+                assertEquals(bufLength, buffer.readableBytes());
 
-        // length
-        int bufLength = tlv.readUnsignedShort();
-        assertEquals(bufLength, tlv.readableBytes());
+                // client, verify
+                assertEquals(0x01, buffer.readByte());
+                assertEquals(1, buffer.readInt());
 
-        // client, verify
-        assertEquals(0x01, byteBuf.readByte());
-        assertEquals(1, byteBuf.readInt());
+                // alpn tlv
+                assertEquals(alpnTlv.typeByteValue(), buffer.readByte());
+                bufLength = buffer.readShort();
+                assertEquals(helloWorld.readableBytes(), bufLength);
+                try (Buffer copy = buffer.copy(buffer.readerOffset(), bufLength)) {
+                    assertEquals(helloWorld, copy);
+                }
 
-        // alpn tlv
-        assertEquals(alpnTlv.typeByteValue(), tlv.readByte());
-        bufLength = tlv.readShort();
-        assertEquals(helloWorld.array().length, bufLength);
-        assertEquals(helloWorld, tlv.readSlice(bufLength));
+                buffer.skipReadable(bufLength);
 
-        // authority tlv
-        assertEquals(authorityTlv.typeByteValue(), tlv.readByte());
-        bufLength = tlv.readShort();
-        assertEquals(arbitrary.array().length, bufLength);
-        assertEquals(arbitrary, tlv.readSlice(bufLength));
-
-        byteBuf.release();
+                // authority tlv
+                assertEquals(authorityTlv.typeByteValue(), buffer.readByte());
+                bufLength = buffer.readShort();
+                assertEquals(arbitrary.readableBytes(), bufLength);
+                try (Buffer copy = buffer.copy(buffer.readerOffset(), bufLength)) {
+                    assertEquals(arbitrary, copy);
+                }
+            }
+        }
         assertFalse(ch.finish());
     }
 
@@ -333,29 +338,29 @@ public class HaProxyMessageEncoderTest {
                 null, null, 0, 0);
         assertTrue(ch.writeOutbound(message));
 
-        ByteBuf byteBuf = ch.readOutbound();
+        try (Buffer buffer = ch.readOutbound()) {
 
-        // header
-        byte[] headerBytes = new byte[12];
-        byteBuf.readBytes(headerBytes);
-        assertArrayEquals(BINARY_PREFIX, headerBytes);
+            // header
+            byte[] headerBytes = new byte[12];
+            buffer.readBytes(headerBytes, 0, headerBytes.length);
+            assertArrayEquals(BINARY_PREFIX, headerBytes);
 
-        // command
-        byte commandByte = byteBuf.readByte();
-        assertEquals(0x02, (commandByte & 0xf0) >> 4);
-        assertEquals(0x00, commandByte & 0x0f);
+            // command
+            byte commandByte = buffer.readByte();
+            assertEquals(0x02, (commandByte & 0xf0) >> 4);
+            assertEquals(0x00, commandByte & 0x0f);
 
-        // transport protocol, address family
-        byte transportByte = byteBuf.readByte();
-        assertEquals(0x00, transportByte);
+            // transport protocol, address family
+            byte transportByte = buffer.readByte();
+            assertEquals(0x00, transportByte);
 
-        // source address length
-        int sourceAddrLength = byteBuf.readUnsignedShort();
-        assertEquals(0, sourceAddrLength);
+            // source address length
+            int sourceAddrLength = buffer.readUnsignedShort();
+            assertEquals(0, sourceAddrLength);
 
-        assertFalse(byteBuf.isReadable());
+            assertEquals(0, buffer.readableBytes());
 
-        byteBuf.release();
+        }
         assertFalse(ch.finish());
     }
 

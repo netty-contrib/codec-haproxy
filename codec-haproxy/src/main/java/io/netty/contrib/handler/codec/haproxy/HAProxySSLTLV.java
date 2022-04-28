@@ -15,12 +15,13 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty5.buffer.api.Buffer;
 import io.netty5.util.internal.StringUtil;
 
 import java.util.Collections;
 import java.util.List;
+
+import static io.netty5.buffer.api.DefaultBufferAllocators.preferredAllocator;
 
 /**
  * Represents a {@link HAProxyTLV} of the type {@link HAProxyTLV.Type#PP2_TYPE_SSL}.
@@ -41,7 +42,7 @@ public final class HAProxySSLTLV extends HAProxyTLV {
      * @param tlvs the encapsulated {@link HAProxyTLV}s
      */
     public HAProxySSLTLV(final int verify, final byte clientBitField, final List<HAProxyTLV> tlvs) {
-        this(verify, clientBitField, tlvs, Unpooled.EMPTY_BUFFER);
+        this(verify, clientBitField, tlvs, preferredAllocator().allocate(0));
     }
 
     /**
@@ -53,7 +54,7 @@ public final class HAProxySSLTLV extends HAProxyTLV {
      * @param tlvs the encapsulated {@link HAProxyTLV}s
      * @param rawContent the raw TLV content
      */
-    HAProxySSLTLV(final int verify, final byte clientBitField, final List<HAProxyTLV> tlvs, final ByteBuf rawContent) {
+    HAProxySSLTLV(final int verify, final byte clientBitField, final List<HAProxyTLV> tlvs, final Buffer rawContent) {
         super(Type.PP2_TYPE_SSL, (byte) 0x20, rawContent);
 
         this.verify = verify;
@@ -120,5 +121,17 @@ public final class HAProxySSLTLV extends HAProxyTLV {
                ", client: " + client() +
                ", verify: " + verify() +
                ", numEncapsulatedTlvs: " + tlvs.size() + ')';
+    }
+
+    @Override
+    protected HAProxyTLV receive(Buffer buf) {
+        return new HAProxySSLTLV(verify, clientBitField, tlvs, buf);
+    }
+
+    Buffer content() {
+        if (!isAccessible()) {
+            throw new IllegalStateException("HAProxySSLTLV is closed.");
+        }
+        return getBuffer();
     }
 }
