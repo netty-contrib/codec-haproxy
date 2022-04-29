@@ -179,19 +179,15 @@ public final class HAProxyMessage implements Resource<HAProxyMessage> {
                     "incomplete UNIX socket address information: " +
                             Math.min(addressInfoLen, header.readableBytes()) + " bytes (expected: 216+ bytes)");
             }
-            int startIdx = header.readerOffset();
-            int bytes = header.openCursor(startIdx, 108).process(ByteProcessor.FIND_NUL);
+            int bytes = header.openCursor(header.readerOffset(), 108).process(ByteProcessor.FIND_NUL);
             addressLen = bytes == -1 ? 108 : bytes;
-            srcAddress = Statics.copyToCharSequence(header, startIdx, addressLen, CharsetUtil.US_ASCII).toString();
+            srcAddress = header.readCharSequence(addressLen, CharsetUtil.US_ASCII).toString();
+            header.skipReadable(108 - addressLen);
 
-            startIdx += 108;
-
-            bytes = header.openCursor(startIdx, 108).process(ByteProcessor.FIND_NUL);
+            bytes = header.openCursor(header.readerOffset(), 108).process(ByteProcessor.FIND_NUL);
             addressLen = bytes == -1 ? 108 : bytes;
-            dstAddress = Statics.copyToCharSequence(header, startIdx, addressLen, CharsetUtil.US_ASCII).toString();
-            // AF_UNIX defines that exactly 108 bytes are reserved for the address. The previous methods
-            // did not increase the reader index although we already consumed the information.
-            header.readerOffset(startIdx + 108);
+            dstAddress = header.readCharSequence(addressLen, CharsetUtil.US_ASCII).toString();
+            header.skipReadable(108 - addressLen);
         } else {
             if (addressFamily == AddressFamily.AF_IPv4) {
                 // IPv4 requires 12 bytes for address information
