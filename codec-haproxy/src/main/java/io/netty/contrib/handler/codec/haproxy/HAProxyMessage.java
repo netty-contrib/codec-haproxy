@@ -252,24 +252,26 @@ public final class HAProxyMessage implements Resource<HAProxyMessage> {
         final int length = header.readUnsignedShort();
         switch (type) {
         case PP2_TYPE_SSL:
-            final Buffer rawContent = header.split(length);
-            final byte client = header.readByte();
-            final int verify = header.readInt();
+            final Buffer rawContent = header.copy(header.readerOffset(), length);
+            try (Buffer buffer = header.readSplit(length)) {
+                final byte client = buffer.readByte();
+                final int verify = buffer.readInt();
 
-            if (header.readableBytes() >= 4) {
+                if (buffer.readableBytes() >= 4) {
 
-                final List<HAProxyTLV> encapsulatedTlvs = new ArrayList<>(4);
-                do {
-                    final HAProxyTLV haProxyTLV = readNextTLV(header);
-                    if (haProxyTLV == null) {
-                        break;
-                    }
-                    encapsulatedTlvs.add(haProxyTLV);
-                } while (header.readableBytes() >= 4);
+                    final List<HAProxyTLV> encapsulatedTlvs = new ArrayList<>(4);
+                    do {
+                        final HAProxyTLV haProxyTLV = readNextTLV(buffer);
+                        if (haProxyTLV == null) {
+                            break;
+                        }
+                        encapsulatedTlvs.add(haProxyTLV);
+                    } while (buffer.readableBytes() >= 4);
 
-                return new HAProxySSLTLV(verify, client, encapsulatedTlvs, rawContent);
+                    return new HAProxySSLTLV(verify, client, encapsulatedTlvs, rawContent);
+                }
+                return new HAProxySSLTLV(verify, client, Collections.emptyList(), rawContent);
             }
-            return new HAProxySSLTLV(verify, client, Collections.emptyList(), rawContent);
         // If we're not dealing with an SSL Type, we can use the same mechanism
         case PP2_TYPE_ALPN:
         case PP2_TYPE_AUTHORITY:
