@@ -15,8 +15,8 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.DefaultByteBufHolder;
+import io.netty5.buffer.api.Buffer;
+import io.netty5.buffer.api.BufferHolder;
 import io.netty5.util.internal.StringUtil;
 
 import static java.util.Objects.requireNonNull;
@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see HAProxySSLTLV
  */
-public class HAProxyTLV extends DefaultByteBufHolder {
+public class HAProxyTLV extends BufferHolder<HAProxyTLV> {
 
     private final Type type;
     private final byte typeByteValue;
@@ -120,7 +120,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
      * @param typeByteValue the byteValue of the TLV. This is especially important if non-standard TLVs are used
      * @param content the raw content of the TLV
      */
-    public HAProxyTLV(byte typeByteValue, ByteBuf content) {
+    public HAProxyTLV(byte typeByteValue, Buffer content) {
         this(Type.typeForByteValue(typeByteValue), typeByteValue, content);
     }
 
@@ -130,7 +130,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
      * @param type the {@link Type} of the TLV
      * @param content the raw content of the TLV
      */
-    public HAProxyTLV(Type type, ByteBuf content) {
+    public HAProxyTLV(Type type, Buffer content) {
         this(type, Type.byteValueForType(type), content);
     }
 
@@ -141,7 +141,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
      * @param typeByteValue the byteValue of the TLV. This is especially important if non-standard TLVs are used
      * @param content the raw content of the TLV
      */
-    HAProxyTLV(final Type type, final byte typeByteValue, final ByteBuf content) {
+    HAProxyTLV(final Type type, final byte typeByteValue, final Buffer content) {
         super(content);
         requireNonNull(type, "type");
 
@@ -164,54 +164,22 @@ public class HAProxyTLV extends DefaultByteBufHolder {
     }
 
     @Override
-    public HAProxyTLV copy() {
-        return replace(content().copy());
-    }
-
-    @Override
-    public HAProxyTLV duplicate() {
-        return replace(content().duplicate());
-    }
-
-    @Override
-    public HAProxyTLV retainedDuplicate() {
-        return replace(content().retainedDuplicate());
-    }
-
-    @Override
-    public HAProxyTLV replace(ByteBuf content) {
-        return new HAProxyTLV(type, typeByteValue, content);
-    }
-
-    @Override
-    public HAProxyTLV retain() {
-        super.retain();
-        return this;
-    }
-
-    @Override
-    public HAProxyTLV retain(int increment) {
-        super.retain(increment);
-        return this;
-    }
-
-    @Override
-    public HAProxyTLV touch() {
-        super.touch();
-        return this;
-    }
-
-    @Override
-    public HAProxyTLV touch(Object hint) {
-        super.touch(hint);
-        return this;
-    }
-
-    @Override
     public String toString() {
         return StringUtil.simpleClassName(this) +
                "(type: " + type() +
                ", typeByteValue: " + typeByteValue() +
-               ", content: " + contentToString() + ')';
+               ", content: " + content() + ')';
+    }
+
+    @Override
+    protected HAProxyTLV receive(Buffer buf) {
+        return new HAProxyTLV(type, typeByteValue, buf);
+    }
+
+    Buffer content() {
+        if (!isAccessible()) {
+            throw new IllegalStateException("HAProxyTLV is closed.");
+        }
+        return getBuffer();
     }
 }

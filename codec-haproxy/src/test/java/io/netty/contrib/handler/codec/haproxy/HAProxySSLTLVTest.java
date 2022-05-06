@@ -15,53 +15,44 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
+import static io.netty5.buffer.api.DefaultBufferAllocators.preferredAllocator;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HAProxySSLTLVTest {
 
     @Test
-    public void testClientBitmask() throws Exception {
+    public void testClientBitmask() {
 
         // 0b0000_0111
         final byte allClientsEnabled = 0x7;
-        final HAProxySSLTLV allClientsEnabledTLV =
-                new HAProxySSLTLV(0, allClientsEnabled, Collections.emptyList(), Unpooled.buffer());
-
-        assertTrue(allClientsEnabledTLV.isPP2ClientCertConn());
-        assertTrue(allClientsEnabledTLV.isPP2ClientSSL());
-        assertTrue(allClientsEnabledTLV.isPP2ClientCertSess());
-
-        assertTrue(allClientsEnabledTLV.release());
+        try (HAProxySSLTLV allClientsEnabledTLV = new HAProxySSLTLV(0, allClientsEnabled,
+                Collections.emptyList(), preferredAllocator().allocate(0))) {
+            assertTrue(allClientsEnabledTLV.isPP2ClientCertConn());
+            assertTrue(allClientsEnabledTLV.isPP2ClientSSL());
+            assertTrue(allClientsEnabledTLV.isPP2ClientCertSess());
+        }
 
         // 0b0000_0101
         final byte clientSSLandClientCertSessEnabled = 0x5;
+        try (HAProxySSLTLV clientSSLandClientCertSessTLV = new HAProxySSLTLV(0, clientSSLandClientCertSessEnabled,
+                Collections.emptyList(), preferredAllocator().allocate(0))) {
+            assertFalse(clientSSLandClientCertSessTLV.isPP2ClientCertConn());
+            assertTrue(clientSSLandClientCertSessTLV.isPP2ClientSSL());
+            assertTrue(clientSSLandClientCertSessTLV.isPP2ClientCertSess());
+        }
 
-        final HAProxySSLTLV clientSSLandClientCertSessTLV =
-                new HAProxySSLTLV(0, clientSSLandClientCertSessEnabled, Collections.emptyList(),
-                                  Unpooled.buffer());
-
-        assertFalse(clientSSLandClientCertSessTLV.isPP2ClientCertConn());
-        assertTrue(clientSSLandClientCertSessTLV.isPP2ClientSSL());
-        assertTrue(clientSSLandClientCertSessTLV.isPP2ClientCertSess());
-
-        assertTrue(clientSSLandClientCertSessTLV.release());
         // 0b0000_0000
         final byte noClientEnabled = 0x0;
-
-        final HAProxySSLTLV noClientTlv =
-                new HAProxySSLTLV(0, noClientEnabled, Collections.emptyList(),
-                                  Unpooled.buffer());
-
-        assertFalse(noClientTlv.isPP2ClientCertConn());
-        assertFalse(noClientTlv.isPP2ClientSSL());
-        assertFalse(noClientTlv.isPP2ClientCertSess());
-
-        assertTrue(noClientTlv.release());
+        try (HAProxySSLTLV noClientTlv = new HAProxySSLTLV(0, noClientEnabled, Collections.emptyList(),
+                preferredAllocator().allocate(0))) {
+            assertFalse(noClientTlv.isPP2ClientCertConn());
+            assertFalse(noClientTlv.isPP2ClientSSL());
+            assertFalse(noClientTlv.isPP2ClientCertSess());
+        }
     }
 }

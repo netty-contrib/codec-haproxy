@@ -16,7 +16,6 @@
 package io.netty.contrib.handler.codec.haproxy.example;
 
 import io.netty5.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty5.channel.Channel;
 import io.netty5.channel.EventLoopGroup;
 import io.netty5.channel.MultithreadEventLoopGroup;
@@ -26,9 +25,9 @@ import io.netty.contrib.handler.codec.haproxy.HAProxyCommand;
 import io.netty.contrib.handler.codec.haproxy.HAProxyMessage;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProtocolVersion;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol;
-import io.netty5.util.CharsetUtil;
 
 import static io.netty.contrib.handler.codec.haproxy.example.HAProxyServer.PORT;
+import static io.netty5.buffer.ByteBufUtil.writeAscii;
 
 public final class HAProxyClient {
 
@@ -50,8 +49,8 @@ public final class HAProxyClient {
                     "127.0.0.1", "127.0.0.2", 8000, 9000);
 
             ch.writeAndFlush(message).sync();
-            ch.writeAndFlush(Unpooled.copiedBuffer("Hello World!", CharsetUtil.US_ASCII)).sync();
-            ch.writeAndFlush(Unpooled.copiedBuffer("Bye now!", CharsetUtil.US_ASCII)).sync();
+            ch.writeAndFlush(writeAscii(ch.bufferAllocator(), "Hello World!")).sync();
+            ch.writeAndFlush(writeAscii(ch.bufferAllocator(), "Bye now!")).sync();
             ch.close().sync();
         } finally {
             group.shutdownGracefully();
