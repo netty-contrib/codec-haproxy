@@ -30,7 +30,7 @@ import io.netty.contrib.handler.codec.haproxy.HAProxyMessageDecoder;
 import io.netty5.handler.logging.LogLevel;
 import io.netty5.handler.logging.LoggingHandler;
 
-import static io.netty5.buffer.ByteBufUtil.appendPrettyHexDump;
+import static io.netty5.buffer.BufferUtil.appendPrettyHexDump;
 
 public final class HAProxyServer {
 

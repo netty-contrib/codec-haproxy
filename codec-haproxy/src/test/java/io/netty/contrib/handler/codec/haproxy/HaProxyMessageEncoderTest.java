@@ -29,7 +29,7 @@ import java.util.List;
 
 import static io.netty.contrib.handler.codec.haproxy.HAProxyConstants.*;
 import static io.netty.contrib.handler.codec.haproxy.HAProxyMessageEncoder.*;
-import static io.netty5.buffer.ByteBufUtil.writeAscii;
+import static io.netty5.buffer.BufferUtil.writeAscii;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
