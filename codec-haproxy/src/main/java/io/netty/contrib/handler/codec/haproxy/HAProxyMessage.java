@@ -19,9 +19,8 @@ import static java.util.Objects.requireNonNull;
 
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol.AddressFamily;
 import io.netty5.buffer.api.Buffer;
-import io.netty5.buffer.api.Resource;
-import io.netty5.buffer.api.Send;
-import io.netty5.buffer.api.internal.Statics;
+import io.netty5.util.Resource;
+import io.netty5.util.Send;
 import io.netty5.util.ByteProcessor;
 import io.netty5.util.CharsetUtil;
 import io.netty5.util.NetUtil;
@@ -125,7 +124,7 @@ public final class HAProxyMessage implements Resource<HAProxyMessage> {
         }
 
         // Per spec, the 13th byte is the protocol version and command byte
-        header.skipReadable(12);
+        header.skipReadableBytes(12);
         final byte verCmdByte = header.readByte();
 
         HAProxyProtocolVersion ver;
@@ -182,12 +181,12 @@ public final class HAProxyMessage implements Resource<HAProxyMessage> {
             int bytes = header.openCursor(header.readerOffset(), 108).process(ByteProcessor.FIND_NUL);
             addressLen = bytes == -1 ? 108 : bytes;
             srcAddress = header.readCharSequence(addressLen, CharsetUtil.US_ASCII).toString();
-            header.skipReadable(108 - addressLen);
+            header.skipReadableBytes(108 - addressLen);
 
             bytes = header.openCursor(header.readerOffset(), 108).process(ByteProcessor.FIND_NUL);
             addressLen = bytes == -1 ? 108 : bytes;
             dstAddress = header.readCharSequence(addressLen, CharsetUtil.US_ASCII).toString();
-            header.skipReadable(108 - addressLen);
+            header.skipReadableBytes(108 - addressLen);
         } else {
             if (addressFamily == AddressFamily.AF_IPv4) {
                 // IPv4 requires 12 bytes for address information
