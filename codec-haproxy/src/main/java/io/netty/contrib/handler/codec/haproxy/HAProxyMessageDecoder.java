@@ -381,13 +381,13 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoderForBuffer {
                         return null;
                     }
                     Buffer frame = buffer.readSplit(length);
-                    buffer.skipReadable(delimiterLength(buffer, eoh - length));
+                    buffer.skipReadableBytes(delimiterLength(buffer, eoh - length));
                     return frame;
                 } else {
                     final int length = buffer.readableBytes();
                     if (length > maxHeaderSize) {
                         discardedBytes = length;
-                        buffer.skipReadable(length);
+                        buffer.skipReadableBytes(length);
                         discarding = true;
                         if (failFast) {
                             failOverLimit(ctx, "over " + discardedBytes);
@@ -406,7 +406,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoderForBuffer {
                     }
                 } else {
                     discardedBytes += buffer.readableBytes();
-                    buffer.skipReadable(buffer.readableBytes());
+                    buffer.skipReadableBytes(buffer.readableBytes());
                 }
                 return null;
             }

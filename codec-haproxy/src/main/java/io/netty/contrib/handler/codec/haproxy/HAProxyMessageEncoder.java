@@ -138,7 +138,7 @@ public final class HAProxyMessageEncoder extends MessageToByteEncoderForBuffer<H
             int readableBytes = value.readableBytes();
             out.writeShort((short) readableBytes);
             value.copyInto(value.readerOffset(), out, out.writerOffset(), readableBytes);
-            out.skipWritable(readableBytes);
+            out.skipWritableBytes(readableBytes);
         }
     }
 

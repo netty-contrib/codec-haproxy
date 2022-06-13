@@ -245,7 +245,7 @@ public class HaProxyMessageEncoderTest {
                 assertEquals(buffer.getUnsignedShort(14), buffer.readableBytes() - V2_HEADER_BYTES_LENGTH);
 
                 // skip to tlv section
-                buffer.skipReadable(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
+                buffer.skipReadableBytes(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
 
                 // alpn tlv
                 assertEquals(alpnTlv.typeByteValue(), buffer.readByte());
@@ -255,7 +255,7 @@ public class HaProxyMessageEncoderTest {
                     assertEquals(helloWorld, copy);
                 }
 
-                buffer.skipReadable(bufLength);
+                buffer.skipReadableBytes(bufLength);
 
                 // authority tlv
                 assertEquals(authorityTlv.typeByteValue(), buffer.readByte());
@@ -294,7 +294,7 @@ public class HaProxyMessageEncoderTest {
 
             try (Buffer buffer = ch.readOutbound()) {
                 assertEquals(buffer.getUnsignedShort(14), buffer.readableBytes() - V2_HEADER_BYTES_LENGTH);
-                buffer.skipReadable(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
+                buffer.skipReadableBytes(V2_HEADER_BYTES_LENGTH + IPv4_ADDRESS_BYTES_LENGTH);
 
                 // ssl tlv type
                 assertEquals(haProxySSLTLV.typeByteValue(), buffer.readByte());
@@ -315,7 +315,7 @@ public class HaProxyMessageEncoderTest {
                     assertEquals(helloWorld, copy);
                 }
 
-                buffer.skipReadable(bufLength);
+                buffer.skipReadableBytes(bufLength);
 
                 // authority tlv
                 assertEquals(authorityTlv.typeByteValue(), buffer.readByte());
