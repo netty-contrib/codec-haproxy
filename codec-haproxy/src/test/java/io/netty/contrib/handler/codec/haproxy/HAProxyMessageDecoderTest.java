@@ -224,7 +224,7 @@ public class HAProxyMessageDecoderTest {
     }
 
     @Test
-    public void testCloseOnInvalid() {
+    public void testCloseOnInvalid() throws InterruptedException {
         Future<Void> closeFuture = ch.closeFuture();
         String header = "GET / HTTP/1.1\r\n";
         try {
@@ -232,7 +232,7 @@ public class HAProxyMessageDecoderTest {
         } catch (HAProxyProtocolException ppex) {
             // swallow this exception since we're just testing to be sure the channel was closed
         }
-        boolean isComplete = closeFuture.awaitUninterruptibly(5000);
+        boolean isComplete = closeFuture.await(5000);
         if (!isComplete || !closeFuture.isDone() || closeFuture.isFailed()) {
             fail("Expected channel close");
         }
