@@ -227,8 +227,8 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoderForBuffer {
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.fireExceptionCaught(cause);
+    public void channelExceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        ctx.fireChannelExceptionCaught(cause);
         if (cause instanceof HAProxyProtocolException) {
             ctx.close(); // drop connection immediately per spec
         }
