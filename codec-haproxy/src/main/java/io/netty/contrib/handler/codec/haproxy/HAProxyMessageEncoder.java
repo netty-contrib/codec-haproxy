@@ -18,7 +18,7 @@ package io.netty.contrib.handler.codec.haproxy;
 import io.netty5.buffer.api.Buffer;
 import io.netty5.channel.ChannelHandler.Sharable;
 import io.netty5.channel.ChannelHandlerContext;
-import io.netty5.handler.codec.MessageToByteEncoderForBuffer;
+import io.netty5.handler.codec.MessageToByteEncoder;
 import io.netty5.util.CharsetUtil;
 import io.netty5.util.NetUtil;
 
@@ -32,7 +32,7 @@ import static io.netty.contrib.handler.codec.haproxy.HAProxyConstants.*;
  * @see <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">Proxy Protocol Specification</a>
  */
 @Sharable
-public final class HAProxyMessageEncoder extends MessageToByteEncoderForBuffer<HAProxyMessage> {
+public final class HAProxyMessageEncoder extends MessageToByteEncoder<HAProxyMessage> {
 
     private static final int V2_VERSION_BITMASK = 0x02 << 4;
 

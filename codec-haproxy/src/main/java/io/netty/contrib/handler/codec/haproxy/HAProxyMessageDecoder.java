@@ -17,7 +17,7 @@ package io.netty.contrib.handler.codec.haproxy;
 
 import io.netty5.buffer.api.Buffer;
 import io.netty5.channel.ChannelHandlerContext;
-import io.netty5.handler.codec.ByteToMessageDecoderForBuffer;
+import io.netty5.handler.codec.ByteToMessageDecoder;
 import io.netty5.handler.codec.ProtocolDetectionResult;
 import io.netty5.util.CharsetUtil;
 
@@ -29,7 +29,7 @@ import static io.netty.contrib.handler.codec.haproxy.HAProxyConstants.*;
  *
  * @see <a href="https://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt">Proxy Protocol Specification</a>
  */
-public class HAProxyMessageDecoder extends ByteToMessageDecoderForBuffer {
+public class HAProxyMessageDecoder extends ByteToMessageDecoder {
     /**
      * Maximum possible length of a v1 proxy protocol header per spec
      */
