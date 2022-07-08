@@ -74,7 +74,7 @@ public class HAProxyIntegrationTest {
             HAProxyMessage message = new HAProxyMessage(
                     HAProxyProtocolVersion.V1, HAProxyCommand.PROXY, HAProxyProxiedProtocol.TCP4,
                     "192.168.0.1", "192.168.0.11", 56324, 443);
-            clientChannel.writeAndFlush(message).sync();
+            clientChannel.writeAndFlush(message).asStage().sync();
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
             try (HAProxyMessage readMessage = msgHolder.get().receive()) {
@@ -87,9 +87,9 @@ public class HAProxyIntegrationTest {
                 assertEquals(message.destinationPort(), readMessage.destinationPort());
             }
         } finally {
-            clientChannel.close().sync();
-            serverChannel.close().sync();
-            group.shutdownGracefully().sync();
+            clientChannel.close().asStage().sync();
+            serverChannel.close().asStage().sync();
+            group.shutdownGracefully().asStage().sync();
         }
     }
 }

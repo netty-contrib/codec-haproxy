@@ -48,10 +48,10 @@ public final class HAProxyClient {
                     HAProxyProtocolVersion.V2, HAProxyCommand.PROXY, HAProxyProxiedProtocol.TCP4,
                     "127.0.0.1", "127.0.0.2", 8000, 9000);
 
-            ch.writeAndFlush(message).sync();
-            ch.writeAndFlush(writeAscii(ch.bufferAllocator(), "Hello World!")).sync();
-            ch.writeAndFlush(writeAscii(ch.bufferAllocator(), "Bye now!")).sync();
-            ch.close().sync();
+            ch.writeAndFlush(message).asStage().sync();
+            ch.writeAndFlush(writeAscii(ch.bufferAllocator(), "Hello World!")).asStage().sync();
+            ch.writeAndFlush(writeAscii(ch.bufferAllocator(), "Bye now!")).asStage().sync();
+            ch.close().asStage().sync();
         } finally {
             group.shutdownGracefully();
         }
