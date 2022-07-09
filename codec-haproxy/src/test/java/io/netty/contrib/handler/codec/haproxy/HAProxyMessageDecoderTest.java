@@ -233,7 +233,7 @@ public class HAProxyMessageDecoderTest {
         } catch (HAProxyProtocolException ppex) {
             // swallow this exception since we're just testing to be sure the channel was closed
         }
-        boolean isComplete = closeFuture.await(5000, TimeUnit.MILLISECONDS);
+        boolean isComplete = closeFuture.asStage().await(5000, TimeUnit.MILLISECONDS);
         if (!isComplete || !closeFuture.isDone() || closeFuture.isFailed()) {
             fail("Expected channel close");
         }
