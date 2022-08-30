@@ -21,7 +21,7 @@ import io.netty5.handler.codec.ProtocolDetectionResult;
 import io.netty5.handler.codec.ProtocolDetectionState;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol.AddressFamily;
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol.TransportProtocol;
-import io.netty5.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import io.netty5.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -687,14 +687,14 @@ public class HAProxyMessageDecoderTest {
             Buffer secondContentBuf = secondTlv.content();
             byte[] secondContent = new byte[secondContentBuf.readableBytes()];
             secondContentBuf.readBytes(secondContent, 0, secondContent.length);
-            assertArrayEquals("TLSv1".getBytes(CharsetUtil.US_ASCII), secondContent);
+            assertArrayEquals("TLSv1".getBytes(StandardCharsets.US_ASCII), secondContent);
 
             final HAProxyTLV thirdTLV = tlvs.get(2);
             assertEquals(HAProxyTLV.Type.PP2_TYPE_SSL_CN, thirdTLV.type());
             Buffer thirdContentBuf = thirdTLV.content();
             byte[] thirdContent = new byte[thirdContentBuf.readableBytes()];
             thirdContentBuf.readBytes(thirdContent, 0, thirdContent.length);
-            assertArrayEquals("LEAF".getBytes(CharsetUtil.US_ASCII), thirdContent);
+            assertArrayEquals("LEAF".getBytes(StandardCharsets.US_ASCII), thirdContent);
 
             assertTrue(sslTlv.encapsulatedTLVs().contains(secondTlv));
             assertTrue(sslTlv.encapsulatedTLVs().contains(thirdTLV));
