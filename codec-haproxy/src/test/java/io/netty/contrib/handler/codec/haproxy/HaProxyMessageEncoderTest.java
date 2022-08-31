@@ -16,11 +16,11 @@
 package io.netty.contrib.handler.codec.haproxy;
 
 import io.netty5.buffer.api.Buffer;
-import io.netty5.buffer.api.internal.Statics;
+import io.netty5.buffer.api.internal.InternalBufferUtils;
 import io.netty5.channel.embedded.EmbeddedChannel;
 import io.netty.contrib.handler.codec.haproxy.HAProxyTLV.Type;
 import io.netty5.util.ByteProcessor;
-import io.netty5.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -53,7 +53,7 @@ public class HaProxyMessageEncoderTest {
 
         try (Buffer buffer = ch.readOutbound()) {
             assertEquals("PROXY TCP4 192.168.0.1 192.168.0.11 56324 443\r\n",
-                    buffer.toString(CharsetUtil.US_ASCII));
+                    buffer.toString(StandardCharsets.US_ASCII));
         }
         assertFalse(ch.finish());
     }
@@ -69,7 +69,7 @@ public class HaProxyMessageEncoderTest {
 
         try (Buffer buffer = ch.readOutbound()) {
             assertEquals("PROXY TCP6 2001:0db8:85a3:0000:0000:8a2e:0370:7334 1050:0:0:0:5:600:300c:326b 56324 443\r\n",
-                    buffer.toString(CharsetUtil.US_ASCII));
+                    buffer.toString(StandardCharsets.US_ASCII));
         }
         assertFalse(ch.finish());
     }
@@ -212,11 +212,11 @@ public class HaProxyMessageEncoderTest {
 
             // source address
             int bytes = buffer.openCursor(16, 108).process(ByteProcessor.FIND_NUL);
-            assertEquals("/var/run/src.sock", Statics.copyToCharSequence(buffer, 16, bytes, CharsetUtil.US_ASCII));
+            assertEquals("/var/run/src.sock", InternalBufferUtils.copyToCharSequence(buffer, 16, bytes, StandardCharsets.US_ASCII));
 
             // destination address
             bytes = buffer.openCursor(124, 108).process(ByteProcessor.FIND_NUL);
-            assertEquals("/var/run/dst.sock", Statics.copyToCharSequence(buffer, 124, bytes, CharsetUtil.US_ASCII));
+            assertEquals("/var/run/dst.sock", InternalBufferUtils.copyToCharSequence(buffer, 124, bytes, StandardCharsets.US_ASCII));
         }
         assertFalse(ch.finish());
     }

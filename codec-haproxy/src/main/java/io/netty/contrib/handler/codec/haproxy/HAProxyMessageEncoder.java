@@ -18,7 +18,7 @@ package io.netty.contrib.handler.codec.haproxy;
 import io.netty5.buffer.api.Buffer;
 import io.netty5.channel.ChannelHandlerContext;
 import io.netty5.handler.codec.MessageToByteEncoder;
-import io.netty5.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import io.netty5.util.NetUtil;
 
 import java.util.List;
@@ -65,15 +65,15 @@ public final class HAProxyMessageEncoder extends MessageToByteEncoder<HAProxyMes
     private static void encodeV1(HAProxyMessage msg, Buffer out) {
         out.writeBytes(TEXT_PREFIX);
         out.writeByte((byte) ' ');
-        out.writeCharSequence(msg.proxiedProtocol().name(), CharsetUtil.US_ASCII);
+        out.writeCharSequence(msg.proxiedProtocol().name(), StandardCharsets.US_ASCII);
         out.writeByte((byte) ' ');
-        out.writeCharSequence(msg.sourceAddress(), CharsetUtil.US_ASCII);
+        out.writeCharSequence(msg.sourceAddress(), StandardCharsets.US_ASCII);
         out.writeByte((byte) ' ');
-        out.writeCharSequence(msg.destinationAddress(), CharsetUtil.US_ASCII);
+        out.writeCharSequence(msg.destinationAddress(), StandardCharsets.US_ASCII);
         out.writeByte((byte) ' ');
-        out.writeCharSequence(String.valueOf(msg.sourcePort()), CharsetUtil.US_ASCII);
+        out.writeCharSequence(String.valueOf(msg.sourcePort()), StandardCharsets.US_ASCII);
         out.writeByte((byte) ' ');
-        out.writeCharSequence(String.valueOf(msg.destinationPort()), CharsetUtil.US_ASCII);
+        out.writeCharSequence(String.valueOf(msg.destinationPort()), StandardCharsets.US_ASCII);
         out.writeByte((byte) '\r');
         out.writeByte((byte) '\n');
     }
@@ -99,14 +99,14 @@ public final class HAProxyMessageEncoder extends MessageToByteEncoder<HAProxyMes
             case AF_UNIX:
                 out.writeShort((short) (TOTAL_UNIX_ADDRESS_BYTES_LENGTH + msg.tlvNumBytes()));
                 int srcAddrBytesWritten = out.writerOffset();
-                out.writeCharSequence(msg.sourceAddress(), CharsetUtil.US_ASCII);
+                out.writeCharSequence(msg.sourceAddress(), StandardCharsets.US_ASCII);
                 srcAddrBytesWritten = out.writerOffset() - srcAddrBytesWritten;
                 int length = UNIX_ADDRESS_BYTES_LENGTH - srcAddrBytesWritten;
                 for(int i = 0; i < length; ++i) {
                     out.writeByte((byte) 0);
                 }
                 int dstAddrBytesWritten = out.writerOffset();
-                out.writeCharSequence(msg.destinationAddress(), CharsetUtil.US_ASCII);
+                out.writeCharSequence(msg.destinationAddress(), StandardCharsets.US_ASCII);
                 dstAddrBytesWritten = out.writerOffset() - dstAddrBytesWritten;
                 length = UNIX_ADDRESS_BYTES_LENGTH - dstAddrBytesWritten;
                 for(int i = 0; i < length; ++i) {

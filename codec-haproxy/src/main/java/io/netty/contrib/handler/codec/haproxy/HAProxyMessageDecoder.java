@@ -19,8 +19,7 @@ import io.netty5.buffer.api.Buffer;
 import io.netty5.channel.ChannelHandlerContext;
 import io.netty5.handler.codec.ByteToMessageDecoder;
 import io.netty5.handler.codec.ProtocolDetectionResult;
-import io.netty5.util.CharsetUtil;
-
+import java.nio.charset.StandardCharsets;
 
 import static io.netty.contrib.handler.codec.haproxy.HAProxyConstants.*;
 
@@ -255,7 +254,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
             finished = true;
             try {
                 if (version == 1) {
-                    ctx.fireChannelRead(HAProxyMessage.decodeHeader(decoded.toString(CharsetUtil.US_ASCII)));
+                    ctx.fireChannelRead(HAProxyMessage.decodeHeader(decoded.toString(StandardCharsets.US_ASCII)));
                 } else {
                     ctx.fireChannelRead(HAProxyMessage.decodeHeader(decoded));
                 }

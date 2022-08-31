@@ -22,7 +22,7 @@ import io.netty5.buffer.api.Buffer;
 import io.netty5.util.Resource;
 import io.netty5.util.Send;
 import io.netty5.util.ByteProcessor;
-import io.netty5.util.CharsetUtil;
+import java.nio.charset.StandardCharsets;
 import io.netty5.util.NetUtil;
 import io.netty5.util.internal.StringUtil;
 
@@ -180,12 +180,12 @@ public final class HAProxyMessage implements Resource<HAProxyMessage> {
             }
             int bytes = header.openCursor(header.readerOffset(), 108).process(ByteProcessor.FIND_NUL);
             addressLen = bytes == -1 ? 108 : bytes;
-            srcAddress = header.readCharSequence(addressLen, CharsetUtil.US_ASCII).toString();
+            srcAddress = header.readCharSequence(addressLen, StandardCharsets.US_ASCII).toString();
             header.skipReadableBytes(108 - addressLen);
 
             bytes = header.openCursor(header.readerOffset(), 108).process(ByteProcessor.FIND_NUL);
             addressLen = bytes == -1 ? 108 : bytes;
-            dstAddress = header.readCharSequence(addressLen, CharsetUtil.US_ASCII).toString();
+            dstAddress = header.readCharSequence(addressLen, StandardCharsets.US_ASCII).toString();
             header.skipReadableBytes(108 - addressLen);
         } else {
             if (addressFamily == AddressFamily.AF_IPv4) {
@@ -412,7 +412,7 @@ public final class HAProxyMessage implements Resource<HAProxyMessage> {
                 return;
             case AF_UNIX:
                 requireNonNull(address, "address");
-                if (address.getBytes(CharsetUtil.US_ASCII).length > 108) {
+                if (address.getBytes(StandardCharsets.US_ASCII).length > 108) {
                     throw new IllegalArgumentException("invalid AF_UNIX address: " + address);
                 }
                 return;
