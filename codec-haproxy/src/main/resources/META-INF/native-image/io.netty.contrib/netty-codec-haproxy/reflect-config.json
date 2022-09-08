@@ -1,10 +1,16 @@
 [
   {
     "name": "io.netty.contrib.handler.codec.haproxy.HAProxyMessageDecoder",
+    "condition": {
+      "typeReachable": "io.netty.contrib.handler.codec.haproxy.HAProxyMessageDecoder"
+    },
     "queryAllPublicMethods": true
   },
   {
     "name": "io.netty.contrib.handler.codec.haproxy.HAProxyMessageEncoder",
+    "condition": {
+      "typeReachable": "io.netty.contrib.handler.codec.haproxy.HAProxyMessageEncoder"
+    },
     "queryAllPublicMethods": true
   }
 ]
