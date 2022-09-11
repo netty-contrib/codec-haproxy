@@ -16,7 +16,7 @@
 package io.netty.contrib.handler.codec.haproxy.example;
 
 import io.netty5.bootstrap.ServerBootstrap;
-import io.netty5.buffer.api.Buffer;
+import io.netty5.buffer.Buffer;
 import io.netty5.channel.ChannelHandlerContext;
 import io.netty5.channel.ChannelInitializer;
 import io.netty5.channel.EventLoopGroup;
