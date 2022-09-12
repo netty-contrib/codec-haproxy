@@ -18,7 +18,7 @@ package io.netty.contrib.handler.codec.haproxy;
 import static java.util.Objects.requireNonNull;
 
 import io.netty.contrib.handler.codec.haproxy.HAProxyProxiedProtocol.AddressFamily;
-import io.netty5.buffer.api.Buffer;
+import io.netty5.buffer.Buffer;
 import io.netty5.util.Resource;
 import io.netty5.util.Send;
 import io.netty5.util.ByteProcessor;

@@ -15,7 +15,7 @@
  */
 package io.netty.contrib.handler.codec.haproxy;
 
-import io.netty5.buffer.api.Buffer;
+import io.netty5.buffer.Buffer;
 import io.netty5.channel.embedded.EmbeddedChannel;
 import io.netty5.handler.codec.ProtocolDetectionResult;
 import io.netty5.handler.codec.ProtocolDetectionState;
@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.netty5.buffer.BufferUtil.writeAscii;
-import static io.netty5.buffer.api.DefaultBufferAllocators.preferredAllocator;
+import static io.netty5.buffer.DefaultBufferAllocators.preferredAllocator;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
