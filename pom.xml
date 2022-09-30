@@ -24,7 +24,7 @@
 
   <groupId>io.netty.contrib</groupId>
   <artifactId>netty-codec-haproxy-parent</artifactId>
-  <version>5.0.0.Alpha2-SNAPSHOT</version>
+  <version>5.0.0.Alpha2</version>
   <name>Netty/Codec/HAProxy Parent</name>
   <packaging>pom</packaging>
   <url>https://netty.io/</url>
@@ -51,7 +51,7 @@
     <url>https://github.com/netty-contrib/codec-haproxy</url>
     <connection>scm:git:https://github.com/netty-contrib/codec-haproxy.git</connection>
     <developerConnection>scm:git:https://github.com/netty-contrib/codec-haproxy.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>netty-codec-haproxy-parent-5.0.0.Alpha2</tag>
   </scm>
 
   <developers>
